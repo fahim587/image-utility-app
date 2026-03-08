@@ -6,8 +6,7 @@ import { getCroppedImg } from "../utils/imageProcessor";
 import { removeBackground } from "@imgly/background-removal";
 import { saveAs } from "file-saver";
 import { Download, RotateCw, FlipHorizontal, FlipVertical, Maximize, FileDigit, Eraser, ArrowLeft, RefreshCw, Image as ImageIcon, ChevronRight } from "lucide-react";
-
-export const ALL_TOOLS = [
+ const ALL_TOOLS = [
     { to: "/compress", icon: Download, color: "bg-green-500", title: "Compress Image", desc: "Reduce file size significantly while maintaining visual quality.", mode: "compress" },
     { to: "/resize", icon: FileDigit, color: "bg-blue-500", title: "Resize Image", desc: "Change dimensions by pixels or percentage.", mode: "resize" },
     { to: "/crop", icon: Maximize, color: "bg-purple-500", title: "Crop Image", desc: "Trim unwanted areas with precision.", mode: "crop" },
@@ -16,18 +15,22 @@ export const ALL_TOOLS = [
     { to: "/remove-bg", icon: Eraser, color: "bg-indigo-500", title: "Remove Background", desc: "Use AI to automatically detect and remove backgrounds.", mode: "remove-bg" },
 ];
 
-const ToolCard = ({ to, icon: Icon, title, desc, color }) => (
-    <Link to={to} className="group relative block p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${color} text-white transition-transform group-hover:scale-110`}>
-            <Icon className="w-6 h-6" />
-        </div>
-        <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{title}</h3>
-        <p className="text-sm text-gray-500 mt-2 line-clamp-2 leading-relaxed">{desc}</p>
-        <div className="mt-4 flex items-center text-xs font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-            Launch Tool <ChevronRight size={14} className="ml-1" />
-        </div>
-    </Link>
-);
+// icon কে সরাসরি প্রপস হিসেবে নিন এবং ভেতরে একটি বড় হাতের ভ্যারিয়েবলে অ্যাসাইন করুন
+const ToolCard = ({ to, icon, title, desc, color }) => {
+    const IconComponent = icon; // এখানে icon কে বড় হাতের ভ্যারিয়েবলে নিলেন
+    return (
+        <Link to={to} className="group relative block p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${color} text-white transition-transform group-hover:scale-110`}>
+                <IconComponent className="w-6 h-6" /> 
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{title}</h3>
+            <p className="text-sm text-gray-500 mt-2 line-clamp-2 leading-relaxed">{desc}</p>
+            <div className="mt-4 flex items-center text-xs font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                Launch Tool <ChevronRight size={14} className="ml-1" />
+            </div>
+        </Link>
+    );
+};
 
 const ToolLayout = ({ title, icon: Icon, children, file, onClear, mode }) => {
 
@@ -127,31 +130,40 @@ const ToolLayout = ({ title, icon: Icon, children, file, onClear, mode }) => {
 };
 // Helper component to handle async BG removal effect
 const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
-    const [status, setStatus] = useState("idle"); // idle, processing, done, error
+    const [status, setStatus] = useState("idle");
 
     useEffect(() => {
+        // ইমেজ না থাকলে বা অলরেডি প্রসেস শুরু হলে আর রান করবে না
         if (!imageSrc || status !== "idle") return;
 
         const process = async () => {
             setStatus("processing");
             try {
-                const blob = await fetch(imageSrc).then((r) => r.blob());
-                const processedBlob = await removeBackground(blob);
+                const response = await fetch(imageSrc);
+                const blob = await response.blob();
+                
+                // CDN কনফিগারেশন: এটি Vercel-এ ডেপ্লয়মেন্টের সময় ফাইল পাথ এরর কমাবে
+                const config = {
+                    publicPath: "https://static.img.ly/packages/@imgly/background-removal-data/1.4.5/dist/",
+                };
+
+                const processedBlob = await removeBackground(blob, config);
                 const url = URL.createObjectURL(processedBlob);
                 onProcessed(url);
                 setStatus("done");
             } catch (err) {
-                console.error(err);
+                console.error("AI Processing Error:", err);
                 setStatus("error");
             }
         };
         process();
-    }, [imageSrc]); // Run once on mount/change
+    }, [imageSrc, status, onProcessed]); // ডিপেন্ডেন্সি অ্যারে ঠিক করা হয়েছে
 
     if (status === "processing")
         return (
             <div className="text-sm text-gray-500 flex items-center gap-2 py-2">
-                <span className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" /> AI is removing background...
+                <span className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" /> 
+                AI is removing background... (It may take a few moments)
             </div>
         );
     if (status === "done") return <div className="text-sm text-green-600 font-medium py-2 flex items-center gap-2">✓ Background Removed</div>;
