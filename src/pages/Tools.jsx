@@ -128,7 +128,7 @@ const ToolLayout = ({ title, icon: Icon, children, file, onClear, mode }) => {
         </div>
     )
 };
-// Helper component to handle async BG removal effect
+
 const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
     const [status, setStatus] = useState("idle");
 
@@ -140,19 +140,21 @@ const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
             try {
                 const response = await fetch(imageSrc);
                 const blob = await response.blob();
-                
+
                 const config = {
-                   
-                    publicPath: window.location.origin + "https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/", 
+                    publicPath: "https://static.img.ly/packages/@imgly/background-removal-data/1.4.5/dist/",
+                    model: "isnet",
                     progress: (key, current, total) => {
                         console.log(`Downloading ${key}: ${Math.round((current / total) * 100)}%`);
                     },
                 };
 
                 const processedBlob = await removeBackground(blob, config);
+
                 const url = URL.createObjectURL(processedBlob);
                 onProcessed(url);
                 setStatus("done");
+
             } catch (err) {
                 console.error("AI Processing Error:", err);
                 setStatus("error");
@@ -160,19 +162,23 @@ const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
         };
 
         process();
+
     }, [imageSrc, status, onProcessed]);
 
     if (status === "processing")
         return (
             <div className="text-sm text-gray-500 flex items-center gap-2 py-2">
-                <span className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" /> 
+                <span className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
                 AI is removing background... (It may take a few moments)
             </div>
         );
-    
-    if (status === "done") return <div className="text-sm text-green-600 font-medium py-2 flex items-center gap-2">✓ Background Removed</div>;
-    if (status === "error") return <div className="text-sm text-red-500 py-2">Failed to remove background.</div>;
-    
+
+    if (status === "done")
+        return <div className="text-sm text-green-600 font-medium py-2 flex items-center gap-2">✓ Background Removed</div>;
+
+    if (status === "error")
+        return <div className="text-sm text-red-500 py-2">Failed to remove background.</div>;
+
     return null;
 };
 
