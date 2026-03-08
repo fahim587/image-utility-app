@@ -15,9 +15,9 @@ import { Download, RotateCw, FlipHorizontal, FlipVertical, Maximize, FileDigit, 
     { to: "/remove-bg", icon: Eraser, color: "bg-indigo-500", title: "Remove Background", desc: "Use AI to automatically detect and remove backgrounds.", mode: "remove-bg" },
 ];
 
-// icon কে সরাসরি প্রপস হিসেবে নিন এবং ভেতরে একটি বড় হাতের ভ্যারিয়েবলে অ্যাসাইন করুন
+
 const ToolCard = ({ to, icon, title, desc, color }) => {
-    const IconComponent = icon; // এখানে icon কে বড় হাতের ভ্যারিয়েবলে নিলেন
+    const IconComponent = icon; 
     return (
         <Link to={to} className="group relative block p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${color} text-white transition-transform group-hover:scale-110`}>
@@ -142,8 +142,8 @@ const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
                 const blob = await response.blob();
                 
                 const config = {
-                    // এটি আপনার লোকাল public/models ফোল্ডার থেকে ফাইল লোড নিশ্চিত করবে
-                    publicPath: window.location.origin + "https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/",, 
+                   
+                    publicPath: window.location.origin + "https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/", 
                     progress: (key, current, total) => {
                         console.log(`Downloading ${key}: ${Math.round((current / total) * 100)}%`);
                     },
