@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+    --font-display: "Inter", "sans-serif";
+    --color-primary: #3b82f6;
+    --color-secondary: #10b981;
+}
+
+@layer components {
+    .btn-tool {
+        @apply flex items-center justify-center p-3 rounded-lg border border-gray-200 text-gray-600 bg-white hover:bg-gray-50 hover:border-gray-300 hover:text-blue-600 transition-all shadow-sm;
+    }
+    .btn-tool.active {
+        @apply bg-blue-50 border-blue-200 text-blue-600 shadow-inner;
+    }
+}
