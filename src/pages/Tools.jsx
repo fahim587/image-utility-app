@@ -133,7 +133,6 @@ const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
     const [status, setStatus] = useState("idle");
 
     useEffect(() => {
-        // ইমেজ না থাকলে বা অলরেডি প্রসেস শুরু হলে আর রান করবে না
         if (!imageSrc || status !== "idle") return;
 
         const process = async () => {
@@ -142,9 +141,12 @@ const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
                 const response = await fetch(imageSrc);
                 const blob = await response.blob();
                 
-                // CDN কনফিগারেশন: এটি Vercel-এ ডেপ্লয়মেন্টের সময় ফাইল পাথ এরর কমাবে
                 const config = {
-                    publicPath: "https://static.img.ly/packages/@imgly/background-removal-data/1.4.5/dist/",
+                    // এটি আপনার লোকাল public/models ফোল্ডার থেকে ফাইল লোড নিশ্চিত করবে
+                    publicPath: window.location.origin + "https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/",, 
+                    progress: (key, current, total) => {
+                        console.log(`Downloading ${key}: ${Math.round((current / total) * 100)}%`);
+                    },
                 };
 
                 const processedBlob = await removeBackground(blob, config);
@@ -156,8 +158,9 @@ const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
                 setStatus("error");
             }
         };
+
         process();
-    }, [imageSrc, status, onProcessed]); // ডিপেন্ডেন্সি অ্যারে ঠিক করা হয়েছে
+    }, [imageSrc, status, onProcessed]);
 
     if (status === "processing")
         return (
@@ -166,8 +169,10 @@ const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
                 AI is removing background... (It may take a few moments)
             </div>
         );
+    
     if (status === "done") return <div className="text-sm text-green-600 font-medium py-2 flex items-center gap-2">✓ Background Removed</div>;
     if (status === "error") return <div className="text-sm text-red-500 py-2">Failed to remove background.</div>;
+    
     return null;
 };
 

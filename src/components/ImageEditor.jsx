@@ -69,6 +69,7 @@ const ImageEditor = ({ file }) => {
             // imgly operates on the blob/url directly
             const imageBlob = await fetch(imageSrc).then((r) => r.blob());
             const blob = await removeBackground(imageBlob, {
+                publicPath:"https://unpkg.com/@imgly/background-removal-data@1.4.5/dist/",
                 progress: (key, current, total) => {
                     console.log(`Downloading ${key}: ${Math.round((current / total) * 100)}%`);
                 },
@@ -83,7 +84,6 @@ const ImageEditor = ({ file }) => {
             setIsRemovingBg(false);
         }
     };
-
     const handleDownload = async () => {
         setIsProcessing(true);
         try {
