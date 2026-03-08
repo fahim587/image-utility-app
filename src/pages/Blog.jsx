@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
     ChevronDown, ChevronUp, CheckCircle2, Lightbulb, ExternalLink 
 } from 'lucide-react';
@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 // আপনার প্রোজেক্টে সঠিক পাথ ব্যবহার করুন
 import hallstattImage from '../assets/LAKE.png'; 
 import camperVanImage from '../assets/LAKE2.png';
-import ball from '../assets/ball.png';
+import ball from '../assets/BALL.png';
 import AMERICAN from '../assets/AMERICAN.png';
 import PICLE from '../assets/PICLE.png';
 import SCATING from '../assets/SCATING.png';
