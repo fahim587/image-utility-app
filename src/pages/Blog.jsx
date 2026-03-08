@@ -1,12 +1,9 @@
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
     ChevronDown, ChevronUp, CheckCircle2, Lightbulb, ExternalLink 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// উদাহরণস্বরূপ আপনার ছবি দুটি ইম্পোর্ট করা হচ্ছে
-// আপনার প্রোজেক্টে সঠিক পাথ ব্যবহার করুন
 import hallstattImage from '../assets/LAKE.png'; 
 import camperVanImage from '../assets/LAKE2.png';
 import ball from '../assets/BALL.png';
@@ -19,7 +16,7 @@ const toolsDetails = [
         name: "Compress Image",
         link: "/compress",
         shortDesc: "Reduce file size without losing visual quality.",
-        // Hallstatt Lake ছবিটি ল্যান্ডস্কেপ কন্টেন্টকে আরও সুন্দর করবে
+        
         toolImage: <img src={hallstattImage} alt="Hallstatt Lake Optimization" className="size-full object-cover rounded-3xl" />, 
         howToUse: [
             "Upload your high-resolution image (JPG/PNG).",
@@ -33,7 +30,6 @@ const toolsDetails = [
         name: "Resize Image",
         link: "/resize",
         shortDesc: "Change dimensions for social media or web banners.",
-        // Camper Van ছবিটি রেজাইজিং ও ক্রপিং গাইড করার জন্য চমৎকার
         toolImage: <img src={camperVanImage} alt="Camper Van Resizing" className="size-full object-cover rounded-3xl" />,
         howToUse: [
             "Select your image and enter the required width and height.",
@@ -130,7 +126,7 @@ const Blog = () => {
                                 onClick={() => setExpandedId(expandedId === index ? null : index)}
                             >
                                 <div className="flex items-center gap-6">
-                                    {/* এখানে সাধারণ আইকনের জায়গায় ছবি ব্যবহার করা হয়েছে */}
+                                
                                     <div className={`size-30 rounded-3xl ${tool.bg} flex items-center justify-center shadow-inner`}>
                                         {tool.toolImage}
                                     </div>
