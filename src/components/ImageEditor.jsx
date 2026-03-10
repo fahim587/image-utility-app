@@ -18,9 +18,9 @@ const ImageEditor = ({ file }) => {
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
     // Output State
-    const [outputFormat, setOutputFormat] = useState("image/png"); // Default to PNG for transparency
+    const [outputFormat, setOutputFormat] = useState("image/png"); 
     const [quality, setQuality] = useState(0.9);
-    const [resizeDim, setResizeDim] = useState({ width: "", height: "" });
+    const [resizeDim, setResizeDim] = useState({ width: 0, height: 0 });
     const [maintainAspect, setMaintainAspect] = useState(true);
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -48,17 +48,25 @@ const ImageEditor = ({ file }) => {
 
     const handleResizeChange = (e) => {
         const { name, value } = e.target;
+        const numValue = value === "" ? "" : parseInt(value);
+
         if (!maintainAspect) {
-            setResizeDim((prev) => ({ ...prev, [name]: value }));
+            setResizeDim((prev) => ({ ...prev, [name]: numValue }));
             return;
         }
 
         const aspectRatio = originalDimensions.width / originalDimensions.height;
 
         if (name === "width") {
-            setResizeDim({ width: value, height: Math.round(value / aspectRatio) });
+            setResizeDim({ 
+                width: numValue, 
+                height: numValue !== "" ? Math.round(numValue / aspectRatio) : "" 
+            });
         } else {
-            setResizeDim({ width: Math.round(value * aspectRatio), height: value });
+            setResizeDim({ 
+                width: numValue !== "" ? Math.round(numValue * aspectRatio) : "", 
+                height: numValue 
+            });
         }
     };
 
@@ -66,7 +74,6 @@ const ImageEditor = ({ file }) => {
         if (!imageSrc) return;
         setIsRemovingBg(true);
         try {
-            // imgly operates on the blob/url directly
             const imageBlob = await fetch(imageSrc).then((r) => r.blob());
             const blob = await removeBackground(imageBlob, {
                 publicPath: "https://static.img.ly/packages/@imgly/background-removal-data/1.4.5/dist/",
@@ -76,7 +83,7 @@ const ImageEditor = ({ file }) => {
             });
             const url = URL.createObjectURL(blob);
             setImageSrc(url);
-            setOutputFormat("image/png"); // Force PNG for transparency support
+            setOutputFormat("image/png");
         } catch (error) {
             console.error("Background removal failed:", error);
             alert("Failed to remove background. Please try again.");
@@ -84,10 +91,23 @@ const ImageEditor = ({ file }) => {
             setIsRemovingBg(false);
         }
     };
+
     const handleDownload = async () => {
+        if (!croppedAreaPixels) return;
         setIsProcessing(true);
         try {
-            const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels, rotation, flip, outputFormat, quality, resizeDim);
+            const croppedImageBlob = await getCroppedImg(
+                imageSrc, 
+                croppedAreaPixels, 
+                rotation, 
+                flip, 
+                outputFormat, 
+                quality, 
+                {
+                    width: Number(resizeDim.width),
+                    height: Number(resizeDim.height)
+                }
+            );
             saveAs(croppedImageBlob, `edited-image.${outputFormat.split("/")[1]}`);
         } catch (e) {
             console.error(e);
@@ -101,15 +121,12 @@ const ImageEditor = ({ file }) => {
 
     return (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col lg:flex-row h-[85vh]">
-            {/* Editor Area */}
             <div className="relative flex-1 bg-gray-900 h-full min-h-[400px] flex items-center justify-center">
-                {/* Checkered background for transparency visibility */}
                 <div
                     className="absolute inset-0 opacity-20 pointer-events-none"
                     style={{
                         backgroundImage: "linear-gradient(45deg, #808080 25%, transparent 25%), linear-gradient(-45deg, #808080 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #808080 75%), linear-gradient(-45deg, transparent 75%, #808080 75%)",
                         backgroundSize: "20px 20px",
-                        backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
                     }}
                 />
 
@@ -124,23 +141,17 @@ const ImageEditor = ({ file }) => {
                     onZoomChange={setZoom}
                     onRotationChange={setRotation}
                     restrictPosition={false}
-                    style={{ containerStyle: { background: "transparent" } }} // Ensure transparency shows through
+                    style={{ containerStyle: { background: "transparent" } }}
                     transform={[`translate(${crop.x}px, ${crop.y}px)`, `rotateZ(${rotation}deg)`, `rotateY(${flip.horizontal ? 180 : 0}deg)`, `rotateX(${flip.vertical ? 180 : 0}deg)`, `scale(${zoom})`].join(" ")}
                 />
 
-                {/* Floating Zoom Controls */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-800/90 backdrop-blur-sm px-6 py-2 rounded-full flex gap-4 text-white shadow-xl z-10">
-                    <button onClick={() => setZoom(Math.max(1, zoom - 0.2))} className="hover:text-blue-400 font-bold">
-                        -
-                    </button>
+                    <button onClick={() => setZoom(Math.max(1, zoom - 0.2))} className="hover:text-blue-400 font-bold">-</button>
                     <span className="text-xs self-center font-mono w-16 text-center">{(zoom * 100).toFixed(0)}%</span>
-                    <button onClick={() => setZoom(Math.min(3, zoom + 0.2))} className="hover:text-blue-400 font-bold">
-                        +
-                    </button>
+                    <button onClick={() => setZoom(Math.min(3, zoom + 0.2))} className="hover:text-blue-400 font-bold">+</button>
                 </div>
             </div>
 
-            {/* Sidebar Controls */}
             <div className="w-full lg:w-80 bg-white border-l border-gray-200 flex flex-col h-full">
                 <div className="p-5 border-b border-gray-100">
                     <h2 className="font-bold text-gray-800 flex items-center gap-2">
@@ -150,7 +161,6 @@ const ImageEditor = ({ file }) => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-8 scrollbar-thin">
-                    {/* AI Tools Section */}
                     <section>
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <Eraser className="w-3 h-3" /> AI Tools
@@ -158,7 +168,7 @@ const ImageEditor = ({ file }) => {
                         <button
                             onClick={handleRemoveBackground}
                             disabled={isRemovingBg}
-                            className="w-full btn-tool flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-100 text-purple-700 hover:from-purple-100 hover:to-indigo-100 transition-all disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-lg text-purple-700 hover:from-purple-100 hover:to-indigo-100 transition-all disabled:opacity-50"
                         >
                             {isRemovingBg ? (
                                 <>
@@ -175,25 +185,17 @@ const ImageEditor = ({ file }) => {
                         <p className="text-[10px] text-gray-400 mt-2 text-center">Processed locally via WebAssembly</p>
                     </section>
 
-                    {/* Transform Section */}
                     <section>
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <RotateCw className="w-3 h-3" /> Transform
                         </h3>
                         <div className="grid grid-cols-3 gap-2">
-                            <button onClick={() => setRotation((r) => r + 90)} className="btn-tool" title="Rotate 90°">
-                                <RotateCw size={18} />
-                            </button>
-                            <button onClick={() => setFlip((f) => ({ ...f, horizontal: !f.horizontal }))} className={`btn-tool ${flip.horizontal ? "active" : ""}`} title="Flip Horizontal">
-                                <FlipHorizontal size={18} />
-                            </button>
-                            <button onClick={() => setFlip((f) => ({ ...f, vertical: !f.vertical }))} className={`btn-tool ${flip.vertical ? "active" : ""}`} title="Flip Vertical">
-                                <FlipVertical size={18} />
-                            </button>
+                            <button onClick={() => setRotation((r) => r + 90)} className="p-2 border rounded hover:bg-gray-50 flex justify-center"><RotateCw size={18} /></button>
+                            <button onClick={() => setFlip((f) => ({ ...f, horizontal: !f.horizontal }))} className={`p-2 border rounded flex justify-center ${flip.horizontal ? "bg-blue-50 border-blue-200 text-blue-600" : "hover:bg-gray-50"}`}><FlipHorizontal size={18} /></button>
+                            <button onClick={() => setFlip((f) => ({ ...f, vertical: !f.vertical }))} className={`p-2 border rounded flex justify-center ${flip.vertical ? "bg-blue-50 border-blue-200 text-blue-600" : "hover:bg-gray-50"}`}><FlipVertical size={18} /></button>
                         </div>
                     </section>
 
-                    {/* Crop Section */}
                     <section>
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <Maximize className="w-3 h-3" /> Crop
@@ -212,7 +214,6 @@ const ImageEditor = ({ file }) => {
                         </div>
                     </section>
 
-                    {/* Resize Section */}
                     <section>
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <FileDigit className="w-3 h-3" /> Resize (px)
@@ -229,13 +230,10 @@ const ImageEditor = ({ file }) => {
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="aspect" checked={maintainAspect} onChange={(e) => setMaintainAspect(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500" />
-                            <label htmlFor="aspect" className="text-xs text-gray-600 select-none cursor-pointer">
-                                Maintain Aspect Ratio
-                            </label>
+                            <label htmlFor="aspect" className="text-xs text-gray-600 select-none cursor-pointer">Maintain Aspect Ratio</label>
                         </div>
                     </section>
 
-                    {/* Export Section */}
                     <section className="bg-gray-50 -mx-5 -mb-5 p-5 border-t border-gray-200 mt-auto">
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">

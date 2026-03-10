@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react"; // Added useEffect for typing logic
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion"; // Added Framer Motion
-import { Maximize, RotateCw, FileDigit, Eraser, Download, RefreshCw, ShieldCheck, Zap, Lock, Globe, CheckCircle, HelpCircle, ChevronRight, Menu, X, ChevronDown } from "lucide-react";
-
+import { Maximize, RotateCw, FileDigit, Eraser, Download, RefreshCw, ShieldCheck, Zap, Lock, Globe, CheckCircle, HelpCircle, ChevronRight, Menu, X, ChevronDown, FileImage } from "lucide-react";
 // Animation Variants
 const fadeInUp = {
     initial: { opacity: 0, y: 30 },
@@ -117,7 +116,13 @@ const Navbar = () => {
                         <Link to="/remove-bg" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
                             <Eraser size={16} className="text-indigo-500" /> Remove BG
                         </Link>
-                    </div>
+                        <Link to="/convert" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
+                            <FileImage size={16} className="text-yellow-500" /> Convert Format
+                        </Link>
+                        <Link to="/rotate" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
+                            <RotateCw size={16} className="text-red-500" /> Rotate & Flip
+                        </Link>
+                        </div>
                     <div className="h-px bg-gray-100"></div>
                     <a href="#features" className="text-gray-700 font-medium p-2">
                         Features
@@ -125,6 +130,12 @@ const Navbar = () => {
                     <a href="#faq" className="text-gray-700 font-medium p-2">
                         FAQ
                     </a>
+                    <Link to="/contact" className="text-gray-700 font-medium p-2">
+                        Contact Us
+                    </Link>
+                    <Link to="/blog" className="text-gray-700 font-medium p-2">
+                        Blog
+                    </Link>
                 </motion.div>
             )}
             </AnimatePresence>
@@ -231,7 +242,7 @@ const Home = () => {
         }, typingSpeed);
 
         return () => clearTimeout(timer);
-    }, [displayedText, isDeleting, wordIndex, typingSpeed]);
+    }, [displayedText, isDeleting, wordIndex, typingSpeed,words]);
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
@@ -590,6 +601,8 @@ const Home = () => {
                             <ul className="space-y-4 text-sm">
                                 <li><a href="#features" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Features</a></li>
                                 <li><a href="#faq" className="hover:text-white hover:translate-x-1 transition-transform inline-block">FAQ</a></li>
+                                <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Contact Us</Link></li>
+                                <li><Link to="/blog" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Blog</Link></li>
                             </ul>
                         </div>
                     </div>

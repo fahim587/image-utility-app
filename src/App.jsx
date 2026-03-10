@@ -7,6 +7,7 @@ import Contact from './pages/Contact';
 import NotFound from './components/NotFound';
 import Blog from './pages/Blog';
 
+
 const router = createBrowserRouter([
     {
         path: "/",

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import DropZone from "../components/DropZone";
 import Cropper from "react-easy-crop";
 import { getCroppedImg } from "../utils/imageProcessor";
-import { removeBackground } from "@imgly/background-removal";
 import { saveAs } from "file-saver";
+import { removeBackground } from "@imgly/background-removal";
 import { Download, RotateCw, FlipHorizontal, FlipVertical, Maximize, FileDigit, Eraser, ArrowLeft, RefreshCw, Image as ImageIcon, ChevronRight } from "lucide-react";
  const ALL_TOOLS = [
     { to: "/compress", icon: Download, color: "bg-green-500", title: "Compress Image", desc: "Reduce file size significantly while maintaining visual quality.", mode: "compress" },
@@ -58,7 +58,6 @@ const ToolLayout = ({ title, icon: Icon, children, file, onClear, mode }) => {
             <main className="flex-1 p-4 lg:p-6 max-w-[1600px] mx-auto w-full">
                 {children}
             </main>
-            {/* More Tools Section */}
             <section className="mt-16 py-12 pb-20 bg-white px-6 lg:px-12 max-w-[1600px] mx-auto w-full border-t border-gray-200">
                 <div className="mb-8">
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">More Tools</h2>
@@ -111,6 +110,8 @@ const ToolLayout = ({ title, icon: Icon, children, file, onClear, mode }) => {
                             <ul className="space-y-4 text-sm">
                                 <li><a href="#features" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Features</a></li>
                                 <li><a href="#faq" className="hover:text-white hover:translate-x-1 transition-transform inline-block">FAQ</a></li>
+                                    <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Contact Us</Link></li>
+                                    <li><Link to="/blog" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Blog</Link></li>
                             </ul>
                         </div>
                     </div>
@@ -129,67 +130,56 @@ const ToolLayout = ({ title, icon: Icon, children, file, onClear, mode }) => {
     )
 };
 
-const BgRemoverLogic = ({ imageSrc, onProcessed }) => {
-    const [status, setStatus] = useState("idle");
+const BgRemoverLogic = ({ file, onProcessed }) => {
+  const [status, setStatus] = useState("idle");
 
-    useEffect(() => {
-        if (!imageSrc || status !== "idle") return;
+  useEffect(() => {
+    if (!file || status !== "idle") return;
 
-        const process = async () => {
-            setStatus("processing");
-            try {
-                const response = await fetch(imageSrc);
-                const blob = await response.blob();
+    const processImage = async () => {
+      setStatus("processing");
 
-                const config = {
-                    publicPath: "https://static.img.ly/packages/@imgly/background-removal-data/1.4.5/dist/",
-                    model: "isnet",
-                    progress: (key, current, total) => {
-                        console.log(`Downloading ${key}: ${Math.round((current / total) * 100)}%`);
-                    },
-                };
+      try {
+        const imageBlob = await removeBackground(file);
+        const url = URL.createObjectURL(imageBlob);
+        onProcessed(url);
+        setStatus("done");
+      } catch (error) {
+        console.error("AI Processing Error:", error);
+        setStatus("error");
+      }
+    };
 
-                const processedBlob = await removeBackground(blob, config);
+    processImage();
+  }, [file, status, onProcessed]);
 
-                const url = URL.createObjectURL(processedBlob);
-                onProcessed(url);
-                setStatus("done");
+  if (status === "processing")
+    return (
+      <div className="text-sm text-gray-500 py-2 flex items-center gap-2">
+        <span className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+        Removing background...
+      </div>
+    );
 
-            } catch (err) {
-                console.error("AI Processing Error:", err);
-                setStatus("error");
-            }
-        };
+  if (status === "done")
+    return (
+      <div className="text-sm text-green-600 font-medium py-2 flex items-center gap-2">
+        ✓ Background removed
+      </div>
+    );
 
-        process();
+  if (status === "error")
+    return <div className="text-sm text-red-500 py-2">Failed to remove background</div>;
 
-    }, [imageSrc, status, onProcessed]);
-
-    if (status === "processing")
-        return (
-            <div className="text-sm text-gray-500 flex items-center gap-2 py-2">
-                <span className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
-                AI is removing background... (It may take a few moments)
-            </div>
-        );
-
-    if (status === "done")
-        return <div className="text-sm text-green-600 font-medium py-2 flex items-center gap-2">✓ Background Removed</div>;
-
-    if (status === "error")
-        return <div className="text-sm text-red-500 py-2">Failed to remove background.</div>;
-
-    return null;
+  return null;
 };
 
-// Base Editor Component (Reusable logic for loading/saving, specific UI injected)
 const BaseEditor = ({ title, icon, mode }) => {
     const [file, setFile] = useState(null);
     const [imageSrc, setImageSrc] = useState(null);
     const [originalDimensions, setOriginalDimensions] = useState({ width: 0, height: 0 });
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Core Transform State (All tools might need basic display)
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [rotation, setRotation] = useState(0);
@@ -197,18 +187,12 @@ const BaseEditor = ({ title, icon, mode }) => {
     const [aspect, setAspect] = useState(undefined);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
-    // Output State
     const [outputFormat, setOutputFormat] = useState("image/jpeg");
     const [quality, setQuality] = useState(0.9);
     const [resizeDim, setResizeDim] = useState({ width: "", height: "" });
     const [maintainAspect, setMaintainAspect] = useState(true);
 
-    // Determines if this tool allows actual cropping interaction
     const isCropTool = mode === "crop";
-
-    // Determines if we need rotation/flip controls (Rotate Tool or Crop Tool usually)
-    // Actually, react-easy-crop handles rotation internally for display.
-    // If not isCropTool, we want to lock the cropper interaction.
 
     useEffect(() => {
         if (file) {
@@ -233,16 +217,9 @@ const BaseEditor = ({ title, icon, mode }) => {
     const handleDownload = async () => {
         setIsProcessing(true);
         try {
-            // If NOT in crop mode, we ignore the crop area from the UI and use the full image area
-            // However, getCroppedImg expects pixel coordinates.
-            // If isCropTool is false, we should pass null or full image dims to getCroppedImg?
-            // Actually, getCroppedImg handles rotation/flip.
-            // If we are not cropping, we want the FULL image, but with rotation/flip applied.
-
             let finalCropPixels = croppedAreaPixels;
 
             if (!isCropTool && originalDimensions.width > 0) {
-                // Force full image crop if not in crop mode
                 finalCropPixels = {
                     x: 0,
                     y: 0,
@@ -283,9 +260,7 @@ const BaseEditor = ({ title, icon, mode }) => {
             }}
         >
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col lg:flex-row h-[80vh] mb-12">
-                {/* Main Canvas Area */}
                 <div className="relative flex-1 bg-gray-900 h-full min-h-[400px] flex items-center justify-center overflow-hidden">
-                    {/* Checkered bg for transparency */}
                     <div
                         className="absolute inset-0 opacity-20 pointer-events-none"
                         style={{
@@ -301,7 +276,6 @@ const BaseEditor = ({ title, icon, mode }) => {
                         </div>
                     ) : (
                         <div className={`absolute inset-0 top-0 left-0 right-0 bottom-0 ${!isCropTool ? "pointer-events-none" : ""}`}>
-                            {/* pointer-events-none above disables dragging/zooming when not in crop mode */}
                             <Cropper
                                 image={imageSrc}
                                 crop={crop}
@@ -312,20 +286,19 @@ const BaseEditor = ({ title, icon, mode }) => {
                                 onCropComplete={onCropComplete}
                                 onZoomChange={setZoom}
                                 onRotationChange={setRotation}
-                                showGrid={isCropTool} // Hide grid if not cropping
+                                showGrid={isCropTool}
                                 restrictPosition={false}
                                 objectFit={isCropTool ? "contain" : "contain"}
                                 style={{
                                     containerStyle: { background: "transparent" },
                                     mediaStyle: { width: "auto", height: "auto", maxHeight: "90%", maxWidth: "90%" },
-                                    cropAreaStyle: !isCropTool ? { display: "none" } : {}, // Hide crop box completely
+                                    cropAreaStyle: !isCropTool ? { display: "none" } : {},
                                 }}
                                 transform={[`translate(${crop.x}px, ${crop.y}px)`, `rotateZ(${rotation}deg)`, `rotateY(${flip.horizontal ? 180 : 0}deg)`, `rotateX(${flip.vertical ? 180 : 0}deg)`, `scale(${zoom})`].join(" ")}
                             />
                         </div>
                     )}
 
-                    {/* Zoom Controls (only if using Cropper AND in Crop Mode) */}
                     {isCropTool && (
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full flex gap-4 text-white shadow-xl z-20 border border-white/10">
                             <button onClick={() => setZoom(Math.max(1, zoom - 0.2))} className="hover:text-blue-400 font-bold w-6">
@@ -339,10 +312,8 @@ const BaseEditor = ({ title, icon, mode }) => {
                     )}
                 </div>
 
-                {/* Sidebar Controls - Conditional Rendering based on Mode */}
                 <div className="w-full lg:w-80 bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto">
                     <div className="p-6 space-y-8">
-                        {/* MODE: CROP */}
                         {mode === "crop" && (
                             <section>
                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -367,7 +338,6 @@ const BaseEditor = ({ title, icon, mode }) => {
                             </section>
                         )}
 
-                        {/* MODE: RESIZE */}
                         {mode === "resize" && (
                             <section>
                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -414,7 +384,6 @@ const BaseEditor = ({ title, icon, mode }) => {
                             </section>
                         )}
 
-                        {/* MODE: ROTATE */}
                         {(mode === "rotate" || mode === "crop") && (
                             <section>
                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -434,26 +403,27 @@ const BaseEditor = ({ title, icon, mode }) => {
                             </section>
                         )}
 
-                        {/* MODE: REMOVE BG */}
                         {mode === "remove-bg" && (
-                            <section>
-                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm mb-4 shadow-sm">
-                                    <h4 className="font-bold mb-1 flex items-center gap-2">
-                                        <Eraser size={14} /> AI Processing
-                                    </h4>
-                                    <p className="text-blue-600/80 text-xs leading-relaxed">Background removal runs automatically on your device. No data leaves your browser.</p>
-                                </div>
-                                <BgRemoverLogic
-                                    imageSrc={imageSrc}
-                                    onProcessed={(url) => {
-                                        setImageSrc(url);
-                                        setOutputFormat("image/png");
-                                    }}
-                                />
-                            </section>
-                        )}
+  <section>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm mb-4 shadow-sm">
+      <h4 className="font-bold mb-1 flex items-center gap-2">
+        <Eraser size={14} /> AI Processing
+      </h4>
+      <p className="text-blue-600/80 text-xs leading-relaxed">
+        Background removal runs automatically in your browser using Imgly.
+      </p>
+    </div>
 
-                        {/* COMMON: EXPORT SETTINGS */}
+    <BgRemoverLogic
+      file={file}
+      onProcessed={(url) => {
+        setImageSrc(url);
+        setOutputFormat("image/png");
+      }}
+    />
+  </section>
+)}
+
                         <section className="pt-6 border-t border-gray-100 mt-auto">
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Export Settings</h3>
 
@@ -507,7 +477,6 @@ const BaseEditor = ({ title, icon, mode }) => {
     );
 };
 
-// Specific Tool Wrappers
 export const CropTool = () => <BaseEditor title="Crop Image" icon={Maximize} mode="crop" />;
 export const ResizeTool = () => <BaseEditor title="Resize Image" icon={FileDigit} mode="resize" />;
 export const RotateTool = () => <BaseEditor title="Rotate & Flip" icon={RotateCw} mode="rotate" />;
