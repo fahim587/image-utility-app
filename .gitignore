@@ -32,3 +32,5 @@ dist-ssr
 # Backend specific
 server/.env
 backend/.env
+*.exe
+*.dll
