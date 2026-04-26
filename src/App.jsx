@@ -75,7 +75,7 @@ const ProtectPdf = lazy(() => import("./pages/tools/ProtectPdf"));
 const AddPageNumbers = lazy(() => import("./pages/tools/AddPageNumbers"));
 const RemovePDFPages = lazy(() => import("./pages/tools/RemovePDFPages"));
 const UnlockPDF = lazy(() => import("./pages/tools/UnlockPDF"));
-const SignPdf = lazy(() => import("./pages/tools/SignPdf"));
+const SignPdf = lazy(() => import("./pages/tools/sign-pdf"));
 const OrganizedPdf = lazy(() => import("./pages/tools/OrganizedPdf"));
 const MetadataEditor = lazy(() => import("./pages/tools/MetadataEditor"));
 const HtmlToPdf = lazy(() => import("./pages/tools/HtmlToPdf"));
