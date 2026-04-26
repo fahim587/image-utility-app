@@ -19,55 +19,60 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ================= CORS =================
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
+/* ================= CORS (FIXED) ================= */
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://googiz.com"
+    ],
+    credentials: true,
+  })
+);
 
-// ================= RAW WEBHOOK =================
+/* ================= RAW WEBHOOK ================= */
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
-// ================= BODY =================
+/* ================= BODY PARSER ================= */
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// ================= STATIC =================
+/* ================= STATIC FILES ================= */
 app.use("/uploads", express.static("uploads"));
 
-// ================= MONGO (SAFE CONNECTION) =================
+/* ================= MONGODB ================= */
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err));
+  .catch((err) => console.log("❌ MongoDB Error:", err));
 
-// 🔥 IMPORTANT FIX (Avoid model overwrite issues globally)
 mongoose.set("strictQuery", true);
 
-// ================= ROUTES =================
+/* ================= ROUTES ================= */
 app.use("/api/ai", aiRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 
-// ================= UPLOAD DIR =================
+/* ================= UPLOAD SETUP ================= */
 const UPLOADS_DIR = "uploads";
+
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR);
 }
 
 const upload = multer({
   dest: UPLOADS_DIR,
-  limits: { fileSize: 25 * 1024 * 1024 }
+  limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-// ================= HEALTH =================
+/* ================= HEALTH CHECK ================= */
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "GOOGIZ Server Running 🚀"
+    message: "GOOGIZ Server Running 🚀",
   });
 });
 
-// ================= FILE UPLOAD URL =================
+/* ================= FILE UPLOAD URL ================= */
 app.post("/api/upload-url", async (req, res) => {
   const { url, isGoogleDrive, fileId } = req.body;
 
@@ -79,12 +84,12 @@ app.post("/api/upload-url", async (req, res) => {
     let targetUrl = url;
 
     if (isGoogleDrive || fileId) {
-      targetUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${process.env.VITE_GOOGLE_DRIVE_API_KEY}`;
+      targetUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${process.env.GOOGLE_DRIVE_API_KEY}`;
     }
 
     const response = await axios.get(targetUrl, {
       responseType: "arraybuffer",
-      timeout: 15000
+      timeout: 15000,
     });
 
     const contentType = response.headers["content-type"];
@@ -93,18 +98,16 @@ app.post("/api/upload-url", async (req, res) => {
 
     res.json({
       url: `data:${contentType};base64,${base64}`,
-      contentType
+      contentType,
     });
-
   } catch (err) {
     console.error("Upload Error:", err.message);
     res.status(500).json({ error: "File load failed" });
   }
 });
 
-// ================= PDF PROTECT =================
+/* ================= PDF PROTECT ================= */
 app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
-
   const { password } = req.body;
   const file = req.file;
 
@@ -114,12 +117,14 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
   }
 
   const inputPath = file.path;
-  const outputPath = path.join(UPLOADS_DIR, `protected-${Date.now()}.pdf`);
+  const outputPath = path.join(
+    UPLOADS_DIR,
+    `protected-${Date.now()}.pdf`
+  );
 
   const cmd = `qpdf --encrypt ${password} ${password} 256 -- "${inputPath}" "${outputPath}"`;
 
   exec(cmd, (err) => {
-
     if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
 
     if (err) {
@@ -129,14 +134,11 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
     res.download(outputPath, () => {
       if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
     });
-
   });
-
 });
 
-// ================= SIGN PDF =================
+/* ================= SIGN PDF ================= */
 app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
-
   const { signature } = req.body;
   const file = req.file;
 
@@ -146,7 +148,6 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
   }
 
   try {
-
     const pdfBytes = fs.readFileSync(file.path);
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
@@ -160,12 +161,15 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
       x: 50,
       y: 50,
       width: 150,
-      height: 50
+      height: 50,
     });
 
     const output = await pdfDoc.save();
 
-    const outPath = path.join(UPLOADS_DIR, `signed-${Date.now()}.pdf`);
+    const outPath = path.join(
+      UPLOADS_DIR,
+      `signed-${Date.now()}.pdf`
+    );
 
     fs.writeFileSync(outPath, output);
 
@@ -174,18 +178,15 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
     res.download(outPath, () => {
       if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
     });
-
   } catch (err) {
     console.error(err);
     if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
     res.status(500).json({ error: "Sign failed" });
   }
-
 });
 
-// ================= AI IMAGE EXPLAIN =================
+/* ================= AI IMAGE EXPLAIN ================= */
 app.post("/api/explain-image", upload.single("image"), async (req, res) => {
-
   const file = req.file;
 
   if (!file) {
@@ -193,26 +194,32 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
   }
 
   try {
-
     const base64 = fs.readFileSync(file.path).toString("base64");
 
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model: "openai/gpt-4o-mini",
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: "Explain this image" },
-            { type: "image_url", image_url: { url: `data:image/png;base64,${base64}` } }
-          ]
-        }]
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Explain this image" },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/png;base64,${base64}`,
+                },
+              },
+            ],
+          },
+        ],
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
@@ -220,17 +227,16 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
 
     res.json({
       success: true,
-      explanation: response.data?.choices?.[0]?.message?.content || ""
+      explanation:
+        response.data?.choices?.[0]?.message?.content || "",
     });
-
   } catch (err) {
     if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
     res.status(500).json({ error: "AI failed" });
   }
-
 });
 
-// ================= START =================
+/* ================= START SERVER ================= */
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
