@@ -18,7 +18,6 @@ import PaymentCancel from "./pages/PaymentCancel";
 import SubscribeButton from "./components/SubscribeButton";
 import UniversalFilePicker from "./components/UniversalFilePicker";
 import ProRoute from "./components/ProRoute";
-import AboutUs from './pages/AboutUs';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
