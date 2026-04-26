@@ -29,7 +29,7 @@ const ProtectedRoute = ({ children }) => {
 const Home = lazy(() => import("./pages/Home"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const Terms = lazy(() => import("./pages/Terms"));
-const AboutUs = lazy(() => import("./pages/AboutUs"));
+const AboutUs = lazy(() => import("./pages/AboutUs.jsx"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
