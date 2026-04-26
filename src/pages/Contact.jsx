@@ -16,7 +16,7 @@ const Contact = () => {
                     <input type="hidden" name="access_key" value="38cc92f9-177d-4d50-a8dd-1845ae0c36f9" />
 
                     {/* এটি যোগ করলে Web3Forms-এর লোগো বা ব্র্যান্ডিং পেজ আর আসবে না */}
-                    <input type="hidden" name="redirect" value="http://localhost:5173/contact" />
+                    <input type="hidden" name="redirect" value="https://googiz.com/contact" />
                     
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1 ml-1">Full Name</label>

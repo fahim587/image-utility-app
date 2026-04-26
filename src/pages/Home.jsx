@@ -1,207 +1,185 @@
-import { useState, useEffect } from "react"; // Added useEffect for typing logic
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion"; // Added Framer Motion
-import { Maximize, RotateCw, FileDigit, Eraser, Download, RefreshCw, ShieldCheck, Zap, Lock, Globe, CheckCircle, HelpCircle, ChevronRight, Menu, X, ChevronDown, FileImage } from "lucide-react";
-// Animation Variants
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+    Maximize, RotateCw, FileDigit, Eraser, Download, RefreshCw, ShieldCheck, Zap, Lock, 
+    CheckCircle, HelpCircle, ChevronRight, ChevronDown, FileImage, 
+    Files, Scissors, Type, Layers, Droplets, Image, FileText, Video, Music, Settings, 
+    QrCode, Key, Link as LinkIcon, Palette, Braces, AlignLeft, Volume2, FastForward, Sparkles, FlipHorizontal,
+    MousePointer2, Image as ImageIcon, PenTool, Mail, Search, Languages,
+    Hash, FileX, Unlock, LayoutGrid, Tag, Globe, FileEdit,
+    Eye, 
+} from "lucide-react";
+import Navbar from "../components/Navbar";
+import BlogMarquee from "../components/BlogMarquee";
+
+
+
+// --- Sub-component: DecorativeElements ---
+const DecorativeElements = () => {
+    const allIcons = [
+        Maximize, RotateCw, FileDigit, Eraser, Download, RefreshCw, ShieldCheck, Zap, Lock,
+        CheckCircle, FileImage, Files, Scissors, Type, Layers, Droplets, Image, FileText,
+        Video, Music, Settings, QrCode, Key, LinkIcon, Palette, Braces, AlignLeft,
+        Volume2, FastForward, Sparkles, FlipHorizontal, MousePointer2, ImageIcon, PenTool, Mail
+    ];
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-50/50 blur-[120px] -z-10" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-50/50 blur-[120px] -z-10" />
+            
+            <motion.div
+                animate={{ y: [0, -20, 0], rotate: [0, 10, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-[15%] right-[10%] p-3 bg-blue-500 rounded-xl text-white shadow-xl hidden lg:block opacity-90"
+            >
+                <PenTool size={24} />
+            </motion.div>
+
+            <motion.div
+                animate={{ y: [0, 15, 0], x: [0, 10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute bottom-[40%] left-[10%] p-3 bg-indigo-400 rounded-xl text-white shadow-xl hidden lg:block opacity-80"
+            >
+                <ImageIcon size={24} />
+            </motion.div>
+
+            <div className="absolute bottom-5 w-full overflow-hidden opacity-100">
+                <motion.div 
+                    initial={{ x: "-50%" }}
+                    animate={{ x: 0 }}
+                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                    className="flex whitespace-nowrap gap-6 md:gap-10 w-fit"
+                >
+                    {[...allIcons, ...allIcons].map((Icon, index) => (
+                        <Icon key={index} className="text-gray-500 w-5 h-5 md:w-8 md:h-8 shrink-0" />
+                    ))}
+                </motion.div>
+            </div>
+        </div>
+    );
+};
+
+// --- Animation Variants ---
 const fadeInUp = {
-    initial: { opacity: 0, y: 30 },
+    initial: { opacity: 0, y: 20 },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true },
-    transition: { duration: 0.6, ease: "easeOut" }
+    viewport: { once: true, margin: "-50px" },
+    transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] }
 };
 
 const staggerContainer = {
     initial: {},
-    whileInView: { transition: { staggerChildren: 0.1 } }
+    whileInView: { transition: { staggerChildren: 0.05 } }
 };
 
-const Navbar = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
-
+// --- Sub-components ---
+const ToolCard = ({ to, icon: ToolIcon, title, desc, color }) => {
     return (
-        <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-gray-200 z-50">
-            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                <a href="#top" className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                    <img src="/vite.svg" alt="logo" className="w-8 h-8" />
-                    PicEditly
-                </a>
-
-                {/* Desktop Nav */}
-                <div className="hidden md:flex items-center gap-8">
-                    <div className="relative group">
-                        <button className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900 py-2" onMouseEnter={() => setIsProductDropdownOpen(true)} onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}>
-                            Products <ChevronDown size={14} />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        <AnimatePresence>
-                        {(isProductDropdownOpen) && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                className="absolute top-full left-0 w-56 bg-white border border-gray-100 rounded-xl shadow-xl py-2 transform origin-top-left"
-                                onMouseLeave={() => setIsProductDropdownOpen(false)}
-                            >
-                                <Link to="/compress" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 hover:text-blue-600">
-                                    <Download size={16} className="text-green-500" /> Compress Image
-                                </Link>
-                                <Link to="/resize" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 hover:text-blue-600">
-                                    <FileDigit size={16} className="text-blue-500" /> Resize Image
-                                </Link>
-                                <Link to="/crop" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 hover:text-blue-600">
-                                    <Maximize size={16} className="text-purple-500" /> Crop Image
-                                </Link>
-                                <Link to="/convert" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 hover:text-blue-600">
-                                    <RefreshCw size={16} className="text-orange-500" /> Convert Format
-                                </Link>
-                                <Link to="/rotate" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 hover:text-blue-600">
-                                    <RotateCw size={16} className="text-pink-500" /> Rotate & Flip
-                                </Link>
-                                <Link to="/remove-bg" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 hover:text-blue-600">
-                                    <Eraser size={16} className="text-indigo-500" /> Remove Background
-                                </Link>
-                            </motion.div>
-                        )}
-                        </AnimatePresence>
-                    </div>
-                    <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                        Features
-                    </a>
-                    <a href="#faq" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                        FAQ
-                    </a>
-                    <Link to="/contact" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                      Contact
-                    </Link>
-                    <Link to="/blog" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                      Blog
-                    </Link>
-
-                </div>
-
-                <div className="hidden md:flex items-center gap-4">
-                    <Link to="/compress" className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors">
-                        Get Started
-                    </Link>
-                </div>
-
-                {/* Mobile Menu Button */}
-                <button className="md:hidden text-gray-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                    {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
-            </div>
-
-            {/* Mobile Nav */}
-            <AnimatePresence>
-            {isMenuOpen && (
+        <motion.div 
+            variants={fadeInUp}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+            <Link to={to} className="group relative block p-5 bg-white/80 backdrop-blur-md border border-gray-100/50 rounded-2xl shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-2 overflow-hidden h-full">
+                <div className={`absolute -right-6 -top-6 w-20 h-20 ${color} opacity-[0.02] rounded-full group-hover:scale-[3] group-hover:opacity-[0.05] transition-all duration-700 ease-in-out`}></div>
+                
                 <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="md:hidden bg-white border-t border-gray-100 p-4 absolute top-16 left-0 w-full shadow-lg flex flex-col gap-4 overflow-hidden"
+                    whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${color} text-white transition-all duration-500 shadow-lg shadow-current/20`}
                 >
-                    <div className="flex flex-col gap-2">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Products</span>
-                        <Link to="/compress" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
-                            <Download size={16} className="text-green-500" /> Compress
-                        </Link>
-                        <Link to="/resize" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
-                            <FileDigit size={16} className="text-blue-500" /> Resize
-                        </Link>
-                        <Link to="/crop" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
-                            <Maximize size={16} className="text-purple-500" /> Crop
-                        </Link>
-                        <Link to="/remove-bg" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
-                            <Eraser size={16} className="text-indigo-500" /> Remove BG
-                        </Link>
-                        <Link to="/convert" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
-                            <FileImage size={16} className="text-yellow-500" /> Convert Format
-                        </Link>
-                        <Link to="/rotate" className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg text-gray-700">
-                            <RotateCw size={16} className="text-red-500" /> Rotate & Flip
-                        </Link>
-                        </div>
-                    <div className="h-px bg-gray-100"></div>
-                    <a href="#features" className="text-gray-700 font-medium p-2">
-                        Features
-                    </a>
-                    <a href="#faq" className="text-gray-700 font-medium p-2">
-                        FAQ
-                    </a>
-                    <Link to="/contact" className="text-gray-700 font-medium p-2">
-                        Contact Us
-                    </Link>
-                    <Link to="/blog" className="text-gray-700 font-medium p-2">
-                        Blog
-                    </Link>
+                    <ToolIcon className="w-5.5 h-5.5" />
                 </motion.div>
-            )}
-            </AnimatePresence>
-        </nav>
+
+                <h3 className="text-md font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
+                    {title}
+                </h3>
+                
+                <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100">
+                    {desc}
+                </p>
+
+                <div className="mt-4 flex items-center text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 uppercase tracking-widest">
+                    Launch Tool 
+                    <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                        <ChevronRight size={12} className="ml-1" />
+                    </motion.span>
+                </div>
+                
+                <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent w-0 group-hover:w-full transition-all duration-700"></div>
+            </Link>
+        </motion.div>
     );
 };
 
-const ToolCard = ({ to, icon: Icon, title, desc, color }) => (
-    <motion.div variants={fadeInUp}>
-        <Link to={to} className="group relative block p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${color} text-white transition-transform group-hover:scale-110`}>
-                <Icon className="w-6 h-6" />
+const SectionHeader = ({ icon: HeaderIcon, title, count, color }) => {
+    return (
+        <motion.div variants={fadeInUp} className="flex items-center gap-4 mb-8">
+            <div className={`p-3 rounded-2xl ${color} bg-opacity-10 shadow-inner backdrop-blur-sm`}>
+                <HeaderIcon size={24} className={color.replace('bg-', 'text-')} />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{title}</h3>
-            <p className="text-sm text-gray-500 mt-2 line-clamp-2 leading-relaxed">{desc}</p>
-            <div className="mt-4 flex items-center text-xs font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                Launch Tool <ChevronRight size={14} className="ml-1" />
+            <div>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    {title} 
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold bg-gray-100 text-gray-500 rounded-full border border-gray-200">
+                        {count}
+                    </span>
+                </h2>
             </div>
-        </Link>
-    </motion.div>
-);
+        </motion.div>
+    );
+};
 
-const Step = ({ number, title, desc, icon: Icon, color }) => (
-    <motion.div 
-        variants={fadeInUp} 
-        className="group relative flex flex-col items-center text-center p-8 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2"
-    >
-        <div className={`absolute -top-4 left-1/2 -translate-x-1/2 w-10 h-10 ${color} text-white rounded-full flex items-center justify-center font-black text-sm shadow-lg ring-4 ring-white z-20`}>
-            {number}
-        </div>
-        <div className={`w-20 h-20 rounded-2xl ${color.replace('bg-', 'bg-opacity-10 ')} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500`}>
-            <Icon size={32} className={`${color.replace('bg-', 'text-')}`} />
-        </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">{title}</h3>
-        <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
-        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-1 ${color} rounded-full group-hover:w-1/3 transition-all duration-500`}></div>
-     
-    </motion.div>
-);
+const Step = ({ number, title, desc, icon: StepIcon, color }) => {
+    return (
+        <motion.div 
+            variants={fadeInUp} 
+            className="group relative flex flex-col items-center text-center p-10 bg-white/50 backdrop-blur-sm rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2"
+        >
+            <div className={`absolute -top-5 left-1/2 -translate-x-1/2 w-11 h-11 ${color} text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-xl rotate-12 group-hover:rotate-0 transition-transform duration-500 ring-4 ring-white`}>
+                {number}
+            </div>
+            <div className={`w-24 h-24 rounded-3xl ${color.replace('bg-', 'bg-opacity-10 ')} flex items-center justify-center mb-8 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500 relative`}>
+                <div className={`absolute inset-0 ${color.replace('bg-', 'bg-opacity-5 ')} blur-2xl rounded-full scale-0 group-hover:scale-100 transition-transform duration-700`}></div>
+                <StepIcon size={40} className={`relative z-10 ${color.replace('bg-', 'text-')}`} />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">{title}</h3>
+            <p className="text-gray-500 text-sm leading-relaxed px-2">{desc}</p>
+        </motion.div>
+    );
+};
 
 const FAQItem = ({ question, answer }) => {
     const [isOpen, setIsOpen] = useState(false);
-
     return (
-        <motion.div layout className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+        <motion.div layout className="bg-white/70 backdrop-blur-md rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-blue-100">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full text-left px-6 py-5 flex items-center justify-between focus:outline-none"
+                className="w-full text-left px-8 py-6 flex items-center justify-between focus:outline-none"
             >
-                <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isOpen ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-600'}`}>
-                        <HelpCircle className="w-4 h-4" />
+                <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500 ${isOpen ? 'bg-blue-600 text-white rotate-12' : 'bg-blue-50 text-blue-600'}`}>
+                        <HelpCircle className="w-5 h-5" />
                     </div>
-                    <h4 className={`font-bold transition-colors ${isOpen ? 'text-blue-600' : 'text-gray-900'}`}>{question}</h4>
+                    <h4 className={`text-lg font-bold tracking-tight transition-colors ${isOpen ? 'text-blue-600' : 'text-gray-900'}`}>{question}</h4>
                 </div>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-500' : ''}`} />
+                <div className={`p-2 rounded-lg transition-all duration-300 ${isOpen ? 'bg-blue-50 rotate-180' : 'bg-gray-50'}`}>
+                    <ChevronDown className={`w-5 h-5 ${isOpen ? 'text-blue-500' : 'text-gray-400'}`} />
+                </div>
             </button>
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
                 {isOpen && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                        <div className="px-6 pb-6 pt-0 ml-11">
-                            <p className="text-gray-600 text-sm leading-relaxed">{answer}</p>
+                        <div className="px-8 pb-8 pt-0 ml-14">
+                            <p className="text-gray-600 leading-relaxed antialiased">{answer}</p>
                         </div>
                     </motion.div>
                 )}
@@ -211,413 +189,353 @@ const FAQItem = ({ question, answer }) => {
 };
 
 const Home = () => {
-    // --- Typewriter Logic Added ---
     const [displayedText, setDisplayedText] = useState("");
     const [wordIndex, setWordIndex] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
     const [typingSpeed, setTypingSpeed] = useState(100);
 
-    const words = ["Professional Image Tools", "Right in Your Browser"];
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const searchRef = useRef(null);
 
+    const words = useMemo(() => [
+        { text: "Professional Content Tools", color: "text-[#010326]" },
+        { text: "Smart Browser Utilities", color: "text-[#0583F2]" },
+        { text: "One-Click Creative Suite", color: "text-[#0A0140]" }
+    ], []);
+
+    // Active Tab State (Default AI Magic)
+    const [activeTab, setActiveTab] = useState('AI Magic');
+
+    const categories = [
+        { id: 'AI Magic', title: 'AI Magic', icon: Sparkles, color: 'text-indigo-600', bg: 'bg-indigo-50', count: 4 },
+        { id: 'Image Tools', title: 'Image Tools', icon: ImageIcon, color: 'text-blue-600', bg: 'bg-blue-50', count: 16 },
+        { id: 'PDF Tools', title: 'PDF Tools', icon: FileText, color: 'text-rose-600', bg: 'bg-rose-50', count: 16 },
+        { id: 'Video Tools', title: 'Video Tools', icon: Video, color: 'text-violet-600', bg: 'bg-violet-50', count: 6 },
+        { id: 'Audio Tools', title: 'Audio Tools', icon: Music, color: 'text-amber-600', bg: 'bg-amber-50', count: 4 },
+        { id: 'Utility Tools', title: 'Utility Tools', icon: Settings, color: 'text-emerald-600', bg: 'bg-emerald-50', count: 13 },
+    ];
+
+    const allTools = useMemo(() => [
+        // AI Magic Tools
+        { title: "AI Content Writer", path: "/ai-content-writer", icon: PenTool, category: "AI Magic", desc: "Generate high-quality blogs and articles in seconds.", color: "bg-indigo-600" },
+        { title: "AI Video Script", path: "/ai-video-script", icon: Video, category: "AI Magic", desc: "Craft engaging scripts for YouTube, Reels, and TikTok.", color: "bg-violet-600" },
+        { title: "AI Image Explainer", path: "/ai-image-explainer", icon: Eye, category: "AI Magic", desc: "Get detailed descriptions and insights from any image.", color: "bg-blue-600" },
+        { title: "AI PDF Summary", path: "/ai-pdf-summarizer", icon: Sparkles, category: "AI Magic", desc: "Extract key insights from long PDF documents instantly.", color: "bg-fuchsia-600" },
+
+        // Image Tools
+        { title: "Compress Image", path: "/compress", icon: Download, category: "Image Tools", desc: "Ultra-fast lossy and lossless compression.", color: "bg-blue-500" },
+        { title: "Resize Image", path: "/resize", icon: FileDigit, category: "Image Tools", desc: "Bulk resize with aspect ratio lock.", color: "bg-blue-500" },
+        { title: "Crop Image", path: "/crop", icon: Maximize, category: "Image Tools", desc: "Preset ratios for Instagram, YT, and more.", color: "bg-blue-500" },
+        { title: "Format Converter", path: "/convert", icon: RefreshCw, category: "Image Tools", desc: "Convert to WEBP, PNG, JPG, or AVIF.", color: "bg-blue-500" },
+        { title: "Rotate Image", path: "/rotate", icon: RotateCw, category: "Image Tools", desc: "Lossless rotation for JPEG and PNG.", color: "bg-blue-500" },
+        { title: "Flip Image", path: "/flip", icon: FlipHorizontal, category: "Image Tools", desc: "Horizontal and vertical mirror effects.", color: "bg-blue-500" },
+        { title: "Add Watermark", path: "/watermark", icon: ShieldCheck, category: "Image Tools", desc: "Overlay logos with opacity control.", color: "bg-blue-500" },
+        { title: "Add Text", path: "/add-text", icon: Type, category: "Image Tools", desc: "Rich text editor for quick annotations.", color: "bg-blue-500" },
+        { title: "Blur Image", path: "/blur", icon: Droplets, category: "Image Tools", desc: "Selective blur for sensitive data.", color: "bg-blue-500" },
+        { title: "Image Filters", path: "/filters", icon: Layers, category: "Image Tools", desc: "Pro-grade color grading presets.", color: "bg-blue-500" },
+        { title: "Image to PDF", path: "/image-to-pdf", icon: FileText, category: "Image Tools", desc: "Merge photos into one document.", color: "bg-blue-500" },
+        { title: "Remove Background", path: "/remove-bg", icon: Eraser, category: "Image Tools", desc: "Smart AI object isolation technology.", color: "bg-blue-500" },
+        { title: "HEIC to JPG", path: "/heic-to-jpg", icon: Languages, category: "Image Tools", desc: "Convert iPhone HEIC photos to JPG format.", color: "bg-blue-500" },
+        { title: "SVG Optimizer", path: "/svg-optimizer", icon: Layers, category: "Image Tools", desc: "Clean and minify SVG files for web use.", color: "bg-blue-500" },
+        { title: "Image to Text", path: "/image-to-text", icon: Type, category: "Image Tools", desc: "Extract text from images with OCR.", color: "bg-blue-500" },
+        { title: "Color Palette Generator", path: "/color-palette-generator", icon: Palette, category: "Image Tools", desc: "Create harmonious color schemes.", color: "bg-blue-500" },
+
+        // PDF Tools
+        { title: "Merge PDF", path: "/merge-pdf", icon: Files, category: "PDF Tools", desc: "Join documents in seconds.", color: "bg-rose-500" },
+        { title: "Split PDF", path: "/split-pdf", icon: Scissors, category: "PDF Tools", desc: "Extract specific page ranges.", color: "bg-rose-500" },
+        { title: "Compress PDF", path: "/compress-pdf", icon: Download, category: "PDF Tools", desc: "Reduce size while keeping text sharp.", color: "bg-rose-500" },
+        { title: "Rotate PDF", path: "/rotate-pdf", icon: RotateCw, category: "PDF Tools", desc: "Fix orientation of scanned docs.", color: "bg-rose-500" },
+        { title: "PDF to JPG", path: "/pdf-to-jpg", icon: Image, category: "PDF Tools", desc: "High-resolution page extraction.", color: "bg-rose-500" },
+        { title: "JPG to PDF", path: "/jpg-to-pdf", icon: FileImage, category: "PDF Tools", desc: "Standardized document creation.", color: "bg-rose-500" },
+        { title: "PDF Watermark", path: "/watermark-pdf", icon: ShieldCheck, category: "PDF Tools", desc: "Stamps for official documentation.", color: "bg-rose-500" },
+        { title: "Protect PDF", path: "/protect-pdf", icon: Lock, category: "PDF Tools", desc: "AES-256 password encryption.", color: "bg-rose-500" },
+        { title: "Add Page Numbers", path: "/add-page-numbers", icon: Hash, category: "PDF Tools", desc: "Add page numbers to your PDF documents easily.", color: "bg-rose-500" },
+        { title: "Remove PDF Pages", path: "/remove-pdf-pages", icon: FileX, category: "PDF Tools", desc: "Remove pages to your PDF documents easily.", color: "bg-rose-500" },
+        { title: "Unlock PDF", path: "/unlock-pdf", icon: Unlock, category: "PDF Tools", desc: "Remove password protection from PDFs.", color: "bg-rose-500" },
+        { title: "Sign PDF", path: "/sign-pdf", icon: PenTool, category: "PDF Tools", desc: "Add digital signatures to your PDF documents.", color: "bg-rose-500" },
+        { title: "Organized PDF", path: "/organized-pdf", icon: LayoutGrid, category: "PDF Tools", desc: "Rearrange pages in your PDF documents easily.", color: "bg-rose-500" },
+        { title: "Metadata Editor", path: "/metadata-editor", icon: Tag, category: "PDF Tools", desc: "Edit metadata in your PDF documents easily.", color: "bg-rose-500" },
+        { title: "HTML to PDF", path: "/html-to-pdf", icon: Globe, category: "PDF Tools", desc: "Convert web pages to PDF format easily.", color: "bg-rose-500" },
+        { title: "Edit PDF", path: "/edit-pdf", icon: FileEdit, category: "PDF Tools", desc: "Modify existing PDF documents easily.", color: "bg-rose-500" },
+
+        // Video Tools
+        { title: "Video Cutter", path: "/video-cutter", icon: Scissors, category: "Video Tools", desc: "Frame-accurate trimming.", color: "bg-violet-500" },
+        { title: "Video Compressor", path: "/video-compressor", icon: Download, category: "Video Tools", desc: "HEVC/H.265 browser encoding.", color: "bg-violet-500" },
+        { title: "Video Converter", path: "/video-converter", icon: RefreshCw, category: "Video Tools", desc: "MP4 to WebM and MKV.", color: "bg-violet-500" },
+        { title: "Video Rotate", path: "/video-rotate", icon: RotateCw, category: "Video Tools", desc: "90/180/270 degree rotation.", color: "bg-violet-500" },
+        { title: "Video Crop", path: "/video-crop", icon: Maximize, category: "Video Tools", desc: "Social media aspect ratios.", color: "bg-violet-500" },
+        { title: "Video to GIF", path: "/video-to-gif", icon: Image, category: "Video Tools", desc: "High-quality gif generation.", color: "bg-violet-500" },
+
+        // Audio Tools
+        { title: "Audio Cutter", path: "/audio-cutter", icon: Scissors, category: "Audio Tools", desc: "Visual waveform audio trimmer.", color: "bg-amber-500" },
+        { title: "Audio Converter", path: "/audio-converter", icon: RefreshCw, category: "Audio Tools", desc: "WAV, MP3, AAC conversion.", color: "bg-amber-500" },
+        { title: "Volume Booster", path: "/volume-booster", icon: Volume2, category: "Audio Tools", desc: "Clean gain with peak limiting.", color: "bg-amber-500" },
+        { title: "Speed Changer", path: "/audio-speed", icon: FastForward, category: "Audio Tools", desc: "Pitch-preserved time stretching.", color: "bg-amber-500" },
+
+        // Utility Tools
+        { title: "QR Generator", path: "/qr-generator", icon: QrCode, category: "Utility Tools", desc: "SVG & PNG output.", color: "bg-emerald-500" },
+        { title: "Barcode Gen", path: "/barcode", icon: FileDigit, category: "Utility Tools", desc: "EAN, UPC, and Code128.", color: "bg-emerald-500" },
+        { title: "Password Gen", path: "/password-gen", icon: Key, category: "Utility Tools", desc: "Cryptographically secure.", color: "bg-emerald-500" },
+        { title: "Base64 Encode", path: "/base64-encode", icon: Lock, category: "Utility Tools", desc: "Data to string encoding.", color: "bg-emerald-500" },
+        { title: "Base64 Decode", path: "/base64-decode", icon: Zap, category: "Utility Tools", desc: "String back to data.", color: "bg-emerald-500" },
+        { title: "URL Encoder", path: "/url-encode", icon: LinkIcon, category: "Utility Tools", desc: "RFC 3986 encoding.", color: "bg-emerald-500" },
+        { title: "URL Decoder", path: "/url-decode", icon: RefreshCw, category: "Utility Tools", desc: "Query param extractor.", color: "bg-emerald-500" },
+        { title: "Text Case Converter", path: "/case-converter", icon: AlignLeft, category: "Utility Tools", desc: "Camel, Pascal, Snake case.", color: "bg-emerald-500" },
+        { title: "JSON Formatter", path: "/json-formatter", icon: Braces, category: "Utility Tools", desc: "Validator and prettifier.", color: "bg-emerald-500" },
+        { title: "Color Picker", path: "/color-picker", icon: Palette, category: "Utility Tools", desc: "HEX, RGBA, HSL picker.", color: "bg-emerald-500" },
+        { title: "Temp Email", path: "/temp-email", icon: Mail, category: "Utility Tools", desc: "Disposable email address generator.", color: "bg-emerald-500" },
+        { title: "Typing Test", path: "/typing-test", icon: Zap, category: "Utility Tools", desc: "Measure your typing speed and accuracy.", color: "bg-emerald-500" },
+        { title: "Lorem Ipsum Generator", path: "/lorem-ipsum", icon: FileText, category: "Utility Tools", desc: "Generate professional placeholder text for your designs.", color: "bg-emerald-500" },
+    ], []);         
+
+    // ১. সার্চ ফিল্টারিং লজিক (ফর ড্রপডাউন)
+    const filteredTools = useMemo(() => {
+        if (!searchQuery) return [];
+        return allTools.filter(tool => 
+            tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            tool.category.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 6);
+    }, [searchQuery, allTools]);
+
+    // ২. ক্যাটাগরি ফিল্টারিং লজিক (কার্ডে ক্লিক করলে যা চেঞ্জ হবে)
+    const filteredCategoryTools = useMemo(() => {
+        return allTools.filter(tool => tool.category === activeTab);
+    }, [activeTab, allTools]);
+
+    // অ্যাক্টিভ ক্যাটাগরির বিস্তারিত তথ্য জানার জন্য
+    const currentCategoryInfo = useMemo(() => {
+        return categories.find(cat => cat.id === activeTab);
+    }, [activeTab, categories]);
+
+    // Close search dropdown on click outside
     useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setIsSearchFocused(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Typing Effect
+    useEffect(() => {
+        const currentFullWord = words[wordIndex].text; 
         const timer = setTimeout(() => {
-            const currentFullWord = words[wordIndex];
-            
             if (isDeleting) {
-                setDisplayedText(currentFullWord.substring(0, displayedText.length - 1));
-                setTypingSpeed(50);
+                setDisplayedText(prev => prev.substring(0, prev.length - 1));
+                setTypingSpeed(40);
             } else {
                 setDisplayedText(currentFullWord.substring(0, displayedText.length + 1));
                 setTypingSpeed(100);
             }
 
             if (!isDeleting && displayedText === currentFullWord) {
-                setTypingSpeed(2000); // Wait before deleting
+                setTypingSpeed(2500);
                 setIsDeleting(true);
             } else if (isDeleting && displayedText === "") {
                 setIsDeleting(false);
                 setWordIndex((prev) => (prev + 1) % words.length);
-                setTypingSpeed(500); // Small pause before next word
+                setTypingSpeed(500);
             }
         }, typingSpeed);
-
         return () => clearTimeout(timer);
-    }, [displayedText, isDeleting, wordIndex, typingSpeed,words]);
+    }, [displayedText, isDeleting, wordIndex, typingSpeed, words]);
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans">
-            <div id="top"></div>
+        <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-100 selection:text-blue-900">
             <Navbar />
 
-            {/* Hero Section */}
-            <section className="bg-white border-b border-gray-200 pt-32 pb-20 px-6 text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30 pointer-events-none"></div>
+            <section className="bg-white border-b border-gray-100 pt-44 pb-32 px-6 text-center relative overflow-hidden z-0">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:32px_32px] opacity-40 pointer-events-none"></div>
+                
+                <DecorativeElements />
 
-                <motion.div 
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="max-w-4xl mx-auto relative z-10"
-                >
-                    <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        whileHover={{ scale: 1.05 }}
-                        className="relative inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-6 shadow-sm border border-blue-100 overflow-hidden cursor-default group"
-                    >
-                        {/* Animated Glow Pulse */}
-                        <motion.span 
-                            animate={{ 
-                                opacity: [0.3, 0.6, 0.3],
-                                scale: [1, 1.1, 1]
-                            }}
-                            transition={{ 
-                                duration: 2, 
-                                repeat: Infinity, 
-                                ease: "easeInOut" 
-                            }}
-                            className="absolute inset-0 bg-blue-200/40 rounded-full blur-md"
-                        />
-
-                        {/* Shimmering Light Streak */}
-                        <motion.div 
-                            animate={{ x: ['-150%', '150%'] }}
-                            transition={{ 
-                                duration: 3, 
-                                repeat: Infinity, 
-                                ease: "linear",
-                                repeatDelay: 1
-                            }}
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent skew-x-12"
-                        />
-
-                        {/* Animated Icon */}
-                        <motion.div
-                            animate={{ 
-                                scale: [1, 1.25, 1],
-                                filter: ["drop-shadow(0 0 0px #3b82f6)", "drop-shadow(0 0 4px #3b82f6)", "drop-shadow(0 0 0px #3b82f6)"]
-                            }}
-                            transition={{ 
-                                repeat: Infinity, 
-                                duration: 2,
-                                ease: "easeInOut"
-                            }}
-                            className="relative z-10 flex items-center"
-                        >
-                            <Zap size={14} fill="gray-900" className="text-blue-600" />
-                        </motion.div>
-
-                        <span className="relative z-10 drop-shadow-sm">Now Live</span>
-                    </motion.div>
-                    {/* Updated Heading with Typewriter logic and min-height to prevent layout shift */}
-                    <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight leading-tight min-h-[160px]">
-                        <span className="inline-block">
+                <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-5xl mx-auto relative z-20 -mt-20 md:-mt-32">
+                    
+                    <h1 className="text-4xl md:text-6xl font-black text-gray-900 mb-6 tracking-tighter leading-[0.95] min-h-fit">
+                        <span className={`inline-block relative ${words[wordIndex].color} transition-colors duration-500`}>
                             {displayedText}
                             <motion.span 
                                 animate={{ opacity: [0, 1, 0] }}
                                 transition={{ repeat: Infinity, duration: 0.8 }}
-                                className="inline-block w-1.5 h-12 md:h-14 bg-blue-600 ml-2 align-middle"
+                                className="inline-block w-1 md:w-2 h-10 md:h-16 bg-blue-600 ml-2 align-middle rounded-full"
                             />
                         </span>
-                        <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Edit and Optimize Instantly</span>
                     </h1>
-                    <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-                        Edit, resize, convert, and optimize your images instantly.
-                        <span className="text-gray-900 font-medium"> No uploads. No sign-ups.</span>
+                    
+                    <p className="text-base md:text-lg text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
+                        Privacy-First Creative Suite. Local PDF, Image, and Video tools. Your files never leave your device.
                     </p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <Link to="/compress" className="bg-gray-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2">
-                            Start Editing Now <ChevronRight size={18} />
-                        </Link>
-                        <a href="#how-it-works" className="bg-white text-gray-700 border border-gray-200 px-8 py-4 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-2">
-                            Learn More <ChevronRight size={18} />
+
+                    {/* --- Search Bar --- */}
+                    <div className="max-w-2xl mx-auto mb-14 relative" ref={searchRef}>
+                        <div className={`relative flex items-center transition-all duration-300 ${isSearchFocused ? 'scale-105' : 'scale-100'}`}>
+                            <div className="absolute left-6 text-gray-400">
+                                <Search size={22} />
+                            </div>
+                            <input 
+                                type="text" 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
+                                placeholder="Search for tools (e.g. 'pdf', 'resize', 'email')..."
+                                className="w-full pl-16 pr-6 py-6 bg-white border-2 border-gray-100 rounded-[2.5rem] text-lg font-medium shadow-xl focus:border-blue-500 focus:outline-none transition-all placeholder:text-gray-400"
+                            />
+                        </div>
+
+                        {/* Search Results Dropdown */}
+                        <AnimatePresence>
+                            {isSearchFocused && searchQuery && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    className="absolute top-full left-0 w-full mt-4 bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[2rem] shadow-2xl z-50 overflow-hidden"
+                                >
+                                    <div className="p-4">
+                                        {filteredTools.length > 0 ? (
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {filteredTools.map((tool, idx) => (
+                                                    <Link 
+                                                        key={idx} 
+                                                        to={tool.path}
+                                                        className="flex items-center gap-4 p-4 hover:bg-blue-50 rounded-2xl transition-all group"
+                                                    >
+                                                        <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center">
+                                                            <tool.icon size={20} />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <div className="font-bold text-gray-900 group-hover:text-blue-600">{tool.title}</div>
+                                                            <div className="text-xs text-gray-400 uppercase tracking-widest font-bold">{tool.category}</div>
+                                                        </div>
+                                                        <ChevronRight size={16} className="ml-auto text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-8 text-gray-500 font-medium">No tools found matching "{searchQuery}"</div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <a href="#products" className="group relative bg-[#0583F2] text-white px-8 py-4 rounded-[2rem] font-bold text-base hover:bg-[#010326] transition-all shadow-[0_15px_40px_-12px_rgba(37,99,235,0.4)] hover:shadow-[0_25px_50px_-10px_rgba(37,99,235,0.5)] hover:-translate-y-1 flex items-center justify-center gap-2.5 w-full sm:w-auto overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            Explore Tools <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </a>
-                        
+                        <a href="#how-it-works" className="group bg-white text-gray-700 border-2 border-gray-100 px-8 py-4 rounded-[2rem] font-bold text-base hover:bg-gray-50 hover:border-gray-200 transition-all flex items-center justify-center gap-2.5 w-full sm:w-auto shadow-sm">
+                            <Zap size={18} className="text-amber-500 group-hover:scale-110 transition-transform" /> How it Works
+                        </a>
                     </div>
+                </motion.div>
+            </section>  
 
-                   <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.5, duration: 0.8 }}
-    className="mt-16 flex flex-wrap items-center justify-center gap-4 md:gap-8"
->
-    {[
-        { 
-        icon: CheckCircle, 
-        text: "Free Forever", 
-        color: "text-white", 
-        iconColor: "text-blue-400", // Soft contrast for the dark card
-        bg: "bg-gray-900", 
-        border: "border-gray-700/50",
-        shadow: "shadow-blue-500/20",
-        glow: "group-hover:bg-blue-500/10"
-    },
-    { 
-        icon: ShieldCheck, 
-        text: "Privacy First", 
-        color: "text-blue-700", 
-        iconColor: "text-blue-600",
-        bg: "bg-blue-50/50", 
-        border: "border-blue-100",
-        shadow: "shadow-blue-200/40",
-        glow: "group-hover:bg-blue-100/50"
-    },
-    { 
-        icon: Globe, 
-        text: "Works Offline", 
-        color: "text-emerald-700", 
-        iconColor: "text-emerald-500",
-        bg: "bg-emerald-50/50", 
-        border: "border-emerald-100", 
-        shadow: "shadow-emerald-200/40",
-        glow: "group-hover:bg-emerald-100/50"
-    }
-    ].map((feature, index) => (
-        <motion.div
-            key={index}
-            whileHover={{ y: -5, scale: 1.02 }}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl border ${feature.bg} ${feature.border} shadow-sm ${feature.shadow} transition-all duration-300`}
-        >
-            <feature.icon size={18} className={`${feature.color}`} />
-            <span className={`text-sm font-bold ${feature.color.replace('500', '700')} tracking-tight`}>
-                {feature.text}
-            </span>
-        </motion.div>
-    ))}
-</motion.div>
+            {/* --- Category Cards --- */}
+            <section className="max-w-7xl mx-auto px-6 mt-10 relative z-30"> 
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                    {categories.map((cat) => (
+                        <motion.button
+                            key={cat.id}
+                            whileHover={{ y: -5 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                                setActiveTab(cat.id);
+                                // স্ক্রল করে নিচে নিয়ে যাওয়ার অপশন (optional)
+                                document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className={`p-6 rounded-[2.5rem] border-2 transition-all flex flex-col items-center text-center gap-3 bg-white shadow-sm hover:shadow-xl ${
+                                activeTab === cat.id ? 'border-blue-500 ring-4 ring-blue-50' : 'border-transparent'
+                            }`}
+                        >
+                            <div className={`w-14 h-14 ${cat.bg} ${cat.color} rounded-2xl flex items-center justify-center mb-1`}>
+                                <cat.icon size={28} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900 text-sm md:text-base leading-tight">
+                                    {cat.title}
+                                </h3>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1">
+                                    {cat.count} Tools
+                                </p>
+                            </div>
+                        </motion.button>
+                    ))}
+                </div>
+            </section>
+
+            {/* --- Dynamic Tools Grid Section --- */}
+            <section className="py-32 px-6 max-w-7xl mx-auto" id="products">
+                <motion.div initial="initial" whileInView="whileInView" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-16">
+                    <h2 className="text-5xl md:text-6xl font-black text-[#020F59] mb-4 tracking-tighter">Everything you need.</h2>    
+                    <p className="text-gray-500 max-w-2xl mx-auto text-xl font-medium leading-relaxed">High-performance tools for content creators, developers, and office pros.</p>
+                </motion.div>
+
+                <motion.div initial="initial" whileInView="whileInView" viewport={{ once: true }} variants={staggerContainer}>
+                    {/* যে ক্যাটাগরি সিলেক্ট করা হবে সেই ডাইনামিক হেডার আসবে */}
+                    {currentCategoryInfo && (
+                        <SectionHeader 
+                            icon={currentCategoryInfo.icon} 
+                            title={currentCategoryInfo.title} 
+                            count={currentCategoryInfo.count} 
+                            color={currentCategoryInfo.color.replace('text-', 'bg-')} 
+                        />
+                    )}
+                    
+                    {/* এখানে শুধুমাত্র ফিল্টার হওয়া টুলগুলো দেখাবে */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
+                        {filteredCategoryTools.map((tool, idx) => (
+                            <ToolCard 
+                                key={idx}
+                                to={tool.path} 
+                                icon={tool.icon} 
+                                color={tool.color} 
+                                title={tool.title} 
+                                desc={tool.desc} 
+                            />
+                        ))}
+                    </div>
                 </motion.div>
             </section>
 
-            {/* Tools Grid */}
-            <section className="py-20 px-6 max-w-7xl mx-auto" id="products">
-                <motion.div 
-                    initial="initial"
-                    whileInView="whileInView"
-                    viewport={{ once: true }}
-                    variants={fadeInUp}
-                    className="text-center mb-16"
-                >
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything You Need At A Glance</h2>
-                    <p className="text-gray-500 max-w-xl mx-auto">A complete suite of image manipulation tools available at your fingertips.</p>
-                </motion.div>
+            
+<BlogMarquee />
 
-                <motion.div 
-                    initial="initial"
-                    whileInView="whileInView"
-                    viewport={{ once: true }}
-                    variants={staggerContainer}
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                >
-                    <ToolCard to="/compress" icon={Download} color="bg-green-500" title="Compress Image" desc="Reduce file size significantly while maintaining visual quality. Perfect for SEO and web performance." />
-                    <ToolCard to="/resize" icon={FileDigit} color="bg-blue-500" title="Resize Image" desc="Change dimensions by pixels or percentage. Scale images down for thumbnails or social media." />
-                    <ToolCard to="/crop" icon={Maximize} color="bg-purple-500" title="Crop Image" desc="Trim unwanted areas with precision. Use presets for Instagram, Twitter, and Facebook covers." />
-                    <ToolCard to="/convert" icon={RefreshCw} color="bg-orange-500" title="Convert Format" desc="Switch seamlessly between JPG, PNG, WEBP, and GIF formats. Modernize your assets." />
-                    <ToolCard to="/resize" icon={RotateCw} color="bg-pink-500" title="Rotate & Flip" desc="Fix orientation issues instantly. Rotate 90° or mirror images horizontally and vertically." />
-                    <ToolCard to="/remove-bg" icon={Eraser} color="bg-indigo-500" title="Remove Background" desc="Use AI to automatically detect and remove backgrounds. Professional results in seconds." />
-                </motion.div>
-            </section>
-
-            {/* How It Works Section */}
-            <section id="how-it-works" className="bg-gray-50/30 border-y border-gray-100 py-24 px-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-10 opacity-60"></div>
-                <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -z-10 opacity-60"></div>
-
+            {/* --- How It Works --- */}
+            <section id="how-it-works" className="bg-white border-y border-gray-100 py-40 px-6">
                 <div className="max-w-6xl mx-auto">
-                    <motion.div 
-                        initial="initial"
-                        whileInView="whileInView"
-                        viewport={{ once: true }}
-                        variants={fadeInUp}
-                        className="text-center mb-20"
-                    >
-                        <span className="text-blue-600 font-bold tracking-[0.8em] uppercase text-xs mb-4 block">How It Works</span>
-                        <h2 className="text-4xl font-black text-gray-900 mb-4">Simple, fast, and secure processing in three steps.</h2>
-                        <div className="w-20 h-1.5 bg-blue-600 mx-auto rounded-full"></div>
-                    </motion.div>
-
-                    <motion.div 
-                        initial="initial"
-                        whileInView="whileInView"
-                        viewport={{ once: true }}
-                        variants={staggerContainer}
-                        className="grid grid-cols-1 md:grid-cols-3 gap-12"
-                    >
-                        <Step 
-                            number="01" 
-                            icon={Download} 
-                            color="bg-gray-900" 
-                            title="Upload Image" 
-                            desc="Drag & drop your files into the browser. We support JPG, PNG, WEBP, and more." 
-                        />
-                        <Step 
-                            number="02" 
-                            icon={Zap} 
-                            color="bg-blue-600" 
-                            title="Edit Instantly" 
-                            desc="Choose your tool. Crop, resize, or compress. Changes happen in real-time." 
-                        />
-                        <Step 
-                            number="03" 
-                            icon={CheckCircle} 
-                            color="bg-green-500" 
-                            title="Download" 
-                            desc="Get your optimized image instantly. No watermarks, no sign-up required." 
-                        />
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* FAQ */}
-            <section className="bg-gray-50/50 py-24 px-6 border-y border-gray-100" id="faq">
-                <div className="max-w-3xl mx-auto">
-                    <motion.div 
-                        initial="initial"
-                        whileInView="whileInView"
-                        viewport={{ once: true }}
-                        variants={fadeInUp}
-                        className="text-center mb-16"
-                    >
-                        <span className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3 block">Got Questions?</span>
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>
-                    </motion.div>
-                    <motion.div 
-                        initial="initial"
-                        whileInView="whileInView"
-                        viewport={{ once: true }}
-                        variants={staggerContainer}
-                        className="space-y-4"
-                    >
-                        <FAQItem question="Is this tool really free?" answer="Yes! PicEditly is completely free and open source. There are no hidden fees, premium tiers, or watermarks on your exported images. We believe essential tools should be accessible to everyone." />
-                        <FAQItem question="Are my photos uploaded to a server?" answer="Absolutely not. We prioritize your privacy above all else. PicEditly utilizes advanced client-side technologies like HTML5 Canvas and WebAssembly to process every image directly within your browser. Your data never touches our servers." />
-                        <FAQItem question="What image formats do you support?" answer="We currently support a wide range of popular formats including JPEG, PNG, WEBP, and GIF for input. Our powerful conversion tool allows you to easily switch between these formats depending on your needs." />
-                        <FAQItem question="Can I use PicEditly on my mobile device?" answer="Yes, definitely. PicEditly is designed with a mobile-first approach. The interface is fully responsive, ensuring a smooth, app-like experience on both iOS and Android smartphones and tablets." />
-                        <FAQItem question="Is there a limit to the file size I can edit?" answer="While there's no strict limit imposed by us, performance depends on your device's capabilities since all processing happens locally. For extremely large files (e.g., raw photos), older devices might experience slight delays." />
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* Features / Why Us */}
-            <section className="py-24 px-6 relative overflow-hidden bg-white" id="features">
-                <div className="absolute top-0 right-0 w-1/2 h-full bg-blue-50/50 -z-10 rounded-l-[100px] hidden lg:block"></div>
-                <div className="max-w-5xl mx-auto">
-                    <motion.div 
-                        initial="initial"
-                        whileInView="whileInView"
-                        viewport={{ once: true, margin: "-100px" }}
-                        variants={fadeInUp}
-                        className="text-center mb-16 max-w-3xl mx-auto"
-                    >
-                        <span className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3 block">Why Choose PicEditly</span>
-                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Designed for Professionals, Built for Everyone</h2>
-                        <p className="text-lg text-gray-500">Experience desktop-class image editing right in your browser. No compromises on quality or privacy.</p>
-                    </motion.div>
-
-                    <motion.div 
-                        initial="initial"
-                        whileInView="whileInView"
-                        viewport={{ once: true }}
-                        variants={staggerContainer}
-                        className="grid grid-cols-1 md:grid-cols-3 gap-8"
-                    >
-                        <motion.div 
-                            variants={fadeInUp} 
-                            whileHover={{ y: -10, transition: { duration: 0.3 } }}
-                            className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-2xl hover:border-blue-100 transition-all duration-300 group"
-                        >
-                            <div className="size-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:rotate-6 transition-transform duration-300 shadow-lg shadow-blue-500/30">
-                                <Lock size={26} />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Privacy Guaranteed</h3>
-                            <p className="text-gray-500 leading-relaxed">Your photos never leave your device. All processing happens locally in your browser using secure WebAssembly technology. Absolute peace of mind.</p>
-                        </motion.div>
-
-                        <motion.div 
-                            variants={fadeInUp} 
-                            whileHover={{ y: -10, transition: { duration: 0.3 } }}
-                            className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-2xl hover:border-blue-100 transition-all duration-300 group"
-                        >
-                            <div className="size-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:rotate-6 transition-transform duration-300 shadow-lg shadow-blue-500/30">
-                                <Zap size={26} />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Lightning Fast</h3>
-                            <p className="text-gray-500 leading-relaxed">No server uploads means zero latency. Experience instant edits, even with high-resolution files. Your workflow, uninterrupted.</p>
-                        </motion.div>
-
-                        <motion.div 
-                            variants={fadeInUp} 
-                            whileHover={{ y: -10, transition: { duration: 0.3 } }}
-                            className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-2xl hover:border-emerald-100 transition-all duration-300 group"
-                        >
-                            <div className="size-14 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:rotate-6 transition-transform duration-300 shadow-lg shadow-teal-500/30">
-                                <Globe size={26} />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-emerald-500 transition-colors">Universal Access</h3>
-                            <p className="text-gray-500 leading-relaxed">Whether you're on a desktop, tablet, or smartphone, PixEdit adapts perfectly. A seamless, native-feeling app experience everywhere.</p>
-                        </motion.div>
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* Footer */}
-            <footer className="bg-gray-950 text-gray-400 pt-20 pb-10 px-6 border-t border-gray-900 relative overflow-hidden">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-900/10 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-900/10 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-                        <div className="lg:col-span-1">
-                            <a href="#top" className="text-2xl font-extrabold text-white flex items-center gap-3 mb-6">
-                                <div className="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-md">
-                                    <img src="/vite.svg" alt="PicEditly Logo" className="w-7 h-7 object-contain" />
-                                </div>
-                                PicEditly
-                            </a>
-                            <p className="text-sm leading-relaxed mb-6">
-                                Professional-grade image editing tools right in your browser. Fast, secure, and completely free.
-                            </p>
-                        </div>
-
-                        <div>
-                            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Products</h4>
-                            <ul className="space-y-4 text-sm">
-                                <li><Link to="/compress" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Compress Image</Link></li>
-                                <li><Link to="/resize" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Resize Image</Link></li>
-                                <li><Link to="/crop" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Crop Image</Link></li>
-                                <li><Link to="/convert" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Convert Format</Link></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">More Tools</h4>
-                            <ul className="space-y-4 text-sm">
-                                <li><Link to="/resize" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Rotate & Flip</Link></li>
-                                <li><Link to="/remove-bg" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Remove Background</Link></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Resources</h4>
-                            <ul className="space-y-4 text-sm">
-                                <li><a href="#features" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Features</a></li>
-                                <li><a href="#faq" className="hover:text-white hover:translate-x-1 transition-transform inline-block">FAQ</a></li>
-                                <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Contact Us</Link></li>
-                                <li><Link to="/blog" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Blog</Link></li>
-                            </ul>
-                        </div>
+                    <div className="text-center mb-28">
+                        <h2 className="text-5xl font-black text-[#010326] mb-8 tracking-tighter">Native Performance. Browser Privacy.</h2>
+                        <div className="w-24 h-2.5 bg-[#0583F2] mx-auto rounded-full"></div>
                     </div>
-
-                    <div className="border-t border-gray-800/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
-                        <p>&copy; {new Date().getFullYear()} PicEditly. Released under ISC License.</p>
-                        <div className="flex gap-6">
-                           <Link to="/contact" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Contact Us</Link>
-                           <Link to="/privacy" className="cursor-pointer hover:text-white transition-colors">Privacy Policy</Link>
-                           <Link to="/terms" className="cursor-pointer hover:text-white transition-colors">Terms of Service</Link>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-20">
+                        <Step number="01" icon={Download} color="bg-gray-900" title="Load Media" desc="Your files are loaded into your local memory. Nothing touches our server." />
+                        <Step number="02" icon={Zap} color="bg-blue-600" title="Process" desc="Leveraging WebAssembly (WASM) for near-native hardware speed." />
+                        <Step number="03" icon={CheckCircle} color="bg-green-500" title="Save" desc="Download your processed assets instantly. High-quality, no watermarks." />
                     </div>
                 </div>
-            </footer>
+            </section>
+            
+            {/* --- FAQ --- */}
+            <section className="bg-[#F8FAFC] py-40 px-6" id="faq">
+                <div className="max-w-4xl mx-auto">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl md:text-5xl font-black text-[#010326] mb-6 tracking-tight">Common Questions</h2>
+                        <p className="text-gray-500 text-lg">Everything you need to know about our privacy-first approach.</p>
+                    </div>
+                    <div className="space-y-6">
+                        <FAQItem question="How is it faster than other online tools?" answer="Traditional tools upload your file to a server, process it there, and make you download it again. GOOGIZ processes the file directly on your computer's CPU/GPU using WASM, eliminating all upload and download wait times." />
+                        <FAQItem question="Are there any file size limits?" answer="The only limit is your device's RAM. Since processing happens locally, we don't impose artificial limits on file sizes like cloud-based competitors do." />
+                        <FAQItem question="Is my data really 100% private?" answer="Yes. You can even turn off your internet after loading the page and the tools will still work. Your data literally never leaves your browser window." />
+                    </div>
+                </div>
+            </section>
         </div>
     );
 };
+
 export default Home;

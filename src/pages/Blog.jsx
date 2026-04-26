@@ -1,243 +1,163 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Download, FileDigit, Focus, RefreshCcw, RotateCw, Layers,
-    ChevronDown, ChevronUp, CheckCircle2, Lightbulb, ExternalLink 
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { blogPosts } from "../data/blogData";
+import { Search, ArrowRight, Clock, Inbox } from "lucide-react";
 
-const toolsDetails = [
-    {
-        name: "Compress Image",
-        link: "/compress",
-        shortDesc: "Reduce file size significantly while maintaining visual quality. Perfect for SEO and web performance.",
-        icon: <Download className="size-10 text-white" />, 
-        howToUse: [
-            "Upload your high-resolution image (JPG/PNG).",
-            "Adjust the quality slider to your desired level.",
-            "Click 'Compress' and download your optimized file."
-        ],
-        benefits: "Perfect for web developers to improve site speed and SEO. It saves storage space on your phone or cloud.",
-        bg: "bg-[#22c55e]"
-    },
-    {
-        name: "Resize Image",
-        link: "/resize",
-        shortDesc: "Change dimensions by pixels or percentage. Scale images down for thumbnails or social media.",
-        icon: <FileDigit className="size-10 text-white" />,
-        howToUse: [
-            "Select your image and enter the required width and height.",
-            "Keep the 'Aspect Ratio' locked to avoid distortion.",
-            "Download the resized image in one click."
-        ],
-        benefits: "Ensures your photos fit perfectly on Instagram, YouTube thumbnails, or Facebook covers without getting cropped awkwardly.",
-        bg: "bg-[#3b82f6]"
-    },
-    {
-        name: "Crop Image",
-        link: "/crop",
-        shortDesc: "Trim unwanted areas with precision. Use presets for Instagram, Twitter, and Facebook covers.",
-        icon: <Focus className="size-10 text-white" />, 
-        howToUse: [
-            "Drag the cropping box over the subject you want to keep.",
-            "Use presets like 1:1 (Square) or 16:9 (Widescreen).",
-            "Apply and save your new composition."
-        ],
-        benefits: "Removes distracting background elements and follows the 'Rule of Thirds' for a more professional look.",
-        bg: "bg-[#a855f7]"
-    },
-    {
-        name: "Convert Format",
-        link: "/convert",
-        shortDesc: "Switch seamlessly between JPG, PNG, WEBP, and GIF formats. Modernize your assets.",
-        icon: <RefreshCcw className="size-10 text-white" />,
-        howToUse: [
-            "Upload your current image file.",
-            "Choose the output format (WebP is recommended for web).",
-            "Convert and download instantly."
-        ],
-        benefits: "WebP format makes your website load 3x faster than traditional JPG, which is a massive win for AdSense approval.",
-        bg: "bg-[#f97316]"
-    },
-    {
-        name: "Rotate & Flip",
-        link: "/rotate",
-        shortDesc: "Fix orientation issues instantly. Rotate 90° or mirror images horizontally and vertically.",
-        icon: <RotateCw className="size-10 text-white" />, 
-        howToUse: [
-            "Use the rotate buttons to fix tilted horizons.",
-            "Use 'Flip' to change the direction of the subject.",
-            "Save the corrected image."
-        ],
-        benefits: "Corrects mistakes made during shooting and helps in leading the viewer's eye toward your content.",
-        bg: "bg-[#ec4899]"
-    },
-    {
-        name: "Remove Background",
-        link: "/remove-bg",
-        shortDesc: "Use AI to automatically detect and remove backgrounds. Professional results in seconds.",
-        icon: <Layers className="size-10 text-white" />, 
-        howToUse: [
-            "Upload any photo with a clear subject.",
-            "Wait for the AI to process and remove the background.",
-            "Download as a transparent PNG."
-        ],
-        benefits: "Crucial for e-commerce sellers (Amazon/Daraz) to create clean product photos and for creators to make stickers/collages.",
-        bg: "bg-[#6366f1]"
-    }
-];
+const categories = ["All", "Image", "PDF", "Video", "Audio", "Utility", "AI Magic"];
 
 const Blog = () => {
-    const [expandedId, setExpandedId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
 
-    return (
-        <div className="min-h-screen bg-white font-sans">
-            {/* Header */}
-            <header id="top" className="py-20 bg-slate-900 text-center px-6">
-                <motion.h1 
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl md:text-6xl font-black text-white mb-6"
-                >
-                    Master Your <span className="text-blue-500">Editing</span>
-                </motion.h1>
-                <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-                    A complete guide on how to use PicEditly tools effectively for professional results.
-                </p>
-            </header>
+  const filteredPosts = useMemo(() => {
+    return blogPosts.filter((post) => {
+      const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = activeCategory === "All" || post.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, activeCategory]);
 
-            {/* Content Grid */}
-            <main className="max-w-6xl mx-auto px-6 -mt-10 pb-20">
-                <div className="grid grid-cols-1 gap-8">
-                    {toolsDetails.map((tool, index) => (
-                        <motion.div 
-                            key={index}
-                            className={`rounded-[40px] border border-slate-100 overflow-hidden shadow-sm transition-all ${expandedId === index ? 'ring-2 ring-blue-500 shadow-xl' : 'bg-white'}`}
-                        >
-                            <div 
-                                className="p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer"
-                                onClick={() => setExpandedId(expandedId === index ? null : index)}
-                            >
-                                <div className="flex items-center gap-6">
-                                    <div className={`size-20 rounded-2xl ${tool.bg} flex items-center justify-center shadow-lg shrink-0`}>
-                                        {tool.icon}
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-slate-900">{tool.name}</h2>
-                                        <p className="text-slate-500 mt-1 max-w-md">{tool.shortDesc}</p>
-                                    </div>
-                                </div>
-                                <button className="flex items-center gap-2 font-bold text-blue-600 bg-blue-50 px-6 py-3 rounded-2xl hover:bg-blue-100 transition-colors">
-                                    {expandedId === index ? "Close Details" : "View Details"}
-                                    {expandedId === index ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                </button>
-                            </div>
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] py-20 px-6">
+      {/* Header Section */}
+      <div className="max-w-5xl mx-auto text-center mb-20">
+        <motion.span 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-sm font-bold tracking-wide uppercase"
+        >
+          Our Journal
+        </motion.span>
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-5xl md:text-7xl font-black text-slate-900 mt-6 mb-6 tracking-tight"
+        >
+          GOOGIZ <span className="text-blue-600">Insights</span>
+        </motion.h1>
+        <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed">
+          Explore expert guides, industry news, and creative workflows to supercharge your digital assets.
+        </p>
+      </div>
 
-                            <AnimatePresence>
-                                {expandedId === index && (
-                                    <motion.div 
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: "auto", opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="border-t border-slate-50 bg-slate-50/50 p-8 md:p-12"
-                                    >
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                            <div>
-                                                <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900 mb-6">
-                                                    <CheckCircle2 className="text-emerald-500" /> How to Use?
-                                                </h3>
-                                                <ul className="space-y-4">
-                                                    {tool.howToUse.map((step, i) => (
-                                                        <li key={i} className="flex gap-4 text-slate-600 leading-relaxed">
-                                                            <span className="font-black text-blue-600">{i + 1}.</span>
-                                                            {step}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                            <div>
-                                                <h3 className="flex items-center gap-2 text-xl font-bold text-slate-900 mb-6">
-                                                    <Lightbulb className="text-amber-500" /> Why You Need This?
-                                                </h3>
-                                                <p className="text-slate-600 leading-relaxed bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                                                    {tool.benefits}
-                                                </p>
-                                                <Link 
-                                                    to={tool.link}
-                                                    className="mt-8 w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-                                                >
-                                                    Try {tool.name} Now <ExternalLink size={18} />
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </motion.div>
-                    ))}
-                </div>
-            </main>
-
-            {/* Footer */}
-            <footer className="bg-gray-950 text-gray-400 pt-20 pb-10 px-6 border-t border-gray-900 relative overflow-hidden">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-900/10 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-900/10 rounded-full blur-3xl -z-10 pointer-events-none"></div>
-
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-                        <div className="lg:col-span-1">
-                            <a href="#top" className="text-2xl font-extrabold text-white flex items-center gap-3 mb-6">
-                                <div className="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-md">
-                                    <img src="/vite.svg" alt="PicEditly Logo" className="w-7 h-7 object-contain" />
-                                </div>
-                                PicEditly
-                            </a>
-                            <p className="text-sm leading-relaxed mb-6">
-                                Professional-grade image editing tools right in your browser. Fast, secure, and completely free.
-                            </p>
-                        </div>
-
-                        <div>
-                            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Products</h4>
-                            <ul className="space-y-4 text-sm">
-                                <li><Link to="/compress" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Compress Image</Link></li>
-                                <li><Link to="/resize" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Resize Image</Link></li>
-                                <li><Link to="/crop" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Crop Image</Link></li>
-                                <li><Link to="/convert" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Convert Format</Link></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">More Tools</h4>
-                            <ul className="space-y-4 text-sm">
-                                <li><Link to="/resize" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Rotate & Flip</Link></li>
-                                <li><Link to="/remove-bg" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Remove Background</Link></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Resources</h4>
-                            <ul className="space-y-4 text-sm">
-                                <li><a href="#features" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Features</a></li>
-                                <li><a href="#faq" className="hover:text-white hover:translate-x-1 transition-transform inline-block">FAQ</a></li>
-                                <li><Link to="/contact" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Contact Us</Link></li>
-                                <li><Link to="/blog" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Blog</Link></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="border-t border-gray-800/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
-                        <p>&copy; {new Date().getFullYear()} PicEditly. Released under ISC License.</p>
-                        <div className="flex gap-6">
-                           <Link to="/contact" className="hover:text-white hover:translate-x-1 transition-transform inline-block">Contact Us</Link>
-                           <Link to="/privacy" className="cursor-pointer hover:text-white transition-colors">Privacy Policy</Link>
-                           <Link to="/terms" className="cursor-pointer hover:text-white transition-colors">Terms of Service</Link>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+      {/* Filters & Search */}
+      <div className="max-w-7xl mx-auto mb-16 flex flex-col lg:flex-row gap-8 items-center justify-between bg-white p-4 rounded-[2.5rem] shadow-sm border border-slate-100">
+        <div className="relative w-full lg:max-w-md group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Search articles..."
+            className="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500/20 outline-none transition-all font-medium"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-    );
+
+        <div className="flex flex-wrap justify-center gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
+                activeCategory === cat 
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                : "hover:bg-slate-100 text-slate-600"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Blog Grid */}
+      <div className="max-w-7xl mx-auto">
+        {filteredPosts.length > 0 ? (
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+          >
+            <AnimatePresence mode='popLayout'>
+              {filteredPosts.map((post, index) => {
+                // রিডিং টাইম ক্যালকুলেশন
+                const readingTime = Math.ceil(post.content.split(/\s+/).length / 200);
+                
+                return (
+                  <motion.article
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                    key={post.slug}
+                    className="group bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col h-full"
+                  >
+                    <div className="relative h-64 overflow-hidden">
+                      <img 
+                        src={post.image} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        alt={post.title}
+                        loading="lazy"
+                      />
+                      <div className="absolute top-5 left-5">
+                        <span className="bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-600 shadow-sm">
+                          {post.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-10 flex-1 flex flex-col">
+                      <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                         <span className="flex items-center gap-1.5 text-blue-500/80"><Clock size={14}/> {readingTime} Min Read</span>
+                         <span>•</span>
+                         <span>{post.date}</span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-blue-600 transition-colors leading-snug">
+                        <Link to={`/blog/${post.slug}`}>{post.title}</Link>
+                      </h3>
+                      <p className="text-slate-500 leading-relaxed line-clamp-3 mb-8 text-sm">
+                        {post.excerpt}
+                      </p>
+                      
+                      <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
+                            {post.author[0]}
+                          </div>
+                          <span className="text-sm font-bold text-slate-700">{post.author}</span>
+                        </div>
+                        <Link 
+                          to={`/blog/${post.slug}`} 
+                          className="p-3 bg-slate-50 rounded-full group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-[-45deg] transition-all duration-300"
+                        >
+                          <ArrowRight size={18} />
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.article>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            className="py-20 text-center bg-white rounded-[3rem] border border-dashed border-slate-200"
+          >
+            <div className="inline-flex p-6 bg-slate-50 rounded-full mb-6">
+              <Inbox className="text-slate-300" size={40} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">No articles found</h3>
+            <p className="text-slate-500 mt-2">Try adjusting your search or category filter.</p>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Blog;

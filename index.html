@@ -1,13 +1,62 @@
 <!doctype html>
 <html lang="en" class="scroll-smooth">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PicEditly - Edit Images Online</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&family=Rochester&display=swap" rel="stylesheet">
+
+  <!-- Dropbox API -->
+  <script
+    type="text/javascript"
+    src="https://www.dropbox.com/static/api/2/dropins.js"
+    id="dropboxjs"
+    data-app-key="xu9ixp5eglo7kce">
+  </script>
+
+  <!-- Google API -->
+  <script async defer src="https://apis.google.com/js/api.js"></script>
+
+  <title>GOOGIZ - Edit Online</title>
+
+  <style>
+    body{
+      margin:0;
+      padding:0;
+      font-family:"Outfit",sans-serif;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar{
+      width:8px;
+    }
+
+    ::-webkit-scrollbar-track{
+      background:#f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb{
+      background:#cbd5e1;
+      border-radius:10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover{
+      background:#94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="root"></div>
+
+  <!-- React App -->
+  <script type="module" src="/src/main.jsx"></script>
+
+</body>
 </html>

@@ -1,16 +1,98 @@
 @import "tailwindcss";
 
+/* v4 থিমিং: ইন্টারপোলিশন এবং কাস্টম প্রপার্টিজ */
 @theme {
-    --font-display: "Inter", "sans-serif";
-    --color-primary: #3b82f6;
-    --color-secondary: #10b981;
+  --font-display: "Outfit", "Inter", sans-serif; /* আমরা Outfit ফন্টটি যোগ করেছি যা আপনার HTML-এ আছে */
+  --color-primary: #3b82f6;
+  --color-secondary: #10b981;
+  
+  /* কাস্টম স্পেসিং (আপনার ড্রপডাউন উইথ এর জন্য) */
+  --spacing-130: 520px;
+  
+  /* অ্যানিমেশন */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ২০২৬ মডার্ন গ্লোবাল স্টাইল */
+@layer base {
+  :root {
+    --slate-50: #f8fafc;
+    --slate-900: #0f172a;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent; /* মোবাইলে ক্লিক হাইলাইট রিমুভ করে */
+  }
+  
+  body {
+    background-color: var(--slate-50);
+    color: var(--slate-900);
+    font-family: var(--font-display);
+    /* Google Translate-এর জন্য ফিক্স */
+    top: 0px !important;
+    position: static !important;
+    overflow-x: hidden;
+  }
+}
+
+/* কাস্টম কম্পোনেন্ট লেয়ার */
 @layer components {
-    .btn-tool {
-        @apply flex items-center justify-center p-3 rounded-lg border border-gray-200 text-gray-600 bg-white hover:bg-gray-50 hover:border-gray-300 hover:text-blue-600 transition-all shadow-sm;
+  /* টুল বাটন গ্ল্যাস-মরফিজম ইফেক্টসহ */
+  .btn-tool {
+    @apply flex items-center justify-center p-3 rounded-2xl border border-white/40 
+           bg-white/70 backdrop-blur-md text-slate-600 transition-all 
+           shadow-[0_4px_12px_rgba(0,0,0,0.03)];
+    
+    &:hover {
+      @apply bg-white border-blue-200 text-blue-600 shadow-lg -translate-y-0.5;
     }
-    .btn-tool.active {
-        @apply bg-blue-50 border-blue-200 text-blue-600 shadow-inner;
+
+    &:active {
+      @apply scale-95;
     }
+  }
+
+  .btn-tool.active {
+    @apply bg-blue-600 border-blue-600 text-white shadow-blue-100;
+  }
+
+  /* Google Translate Widget Styling */
+  .google-translate-container {
+    @apply inline-flex items-center align-middle;
+  }
+
+  /* Translate ডিফল্ট ড্রপডাউন হাইড করে কাস্টম ডিজাইন */
+  .goog-te-gadget-simple {
+    @apply bg-white/50! border-slate-200! px-3! py-2! rounded-xl! cursor-pointer! 
+           flex! items-center! gap-1! font-bold! text-[13px]! text-slate-600! 
+           hover:bg-slate-100! transition-all! shadow-none!;
+    font-family: var(--font-display) !important;
+  }
+
+  .goog-te-gadget-icon, 
+  .goog-te-menu-value span:nth-child(3), 
+  .goog-te-menu-value span:nth-child(2) {
+    display: none !important; /* ড্রপডাউন অ্যারো এবং আইকন রিমুভ */
+  }
+
+  .goog-te-menu-value span:first-child {
+    @apply flex items-center gap-1;
+    &::before {
+      content: '🌐'; /* একটি মডার্ন ইমোজি বা আইকন যোগ করা */
+      font-size: 14px;
+    }
+  }
+}
+
+/* Global Overrides - UI ক্লিনআপ */
+.goog-te-banner-frame.skiptranslate, 
+.goog-logo-link, 
+iframe.skiptranslate,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+body {
+  top: 0px !important;
 }
