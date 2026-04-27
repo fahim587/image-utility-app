@@ -102,7 +102,7 @@ const ColorPicker = lazy(() => import("./pages/tools/ColorPicker"));
 const TempEmail = lazy(() => import("./pages/tools/TempEmail"));
 const TypingTest = lazy(() => import("./pages/tools/TypingTest"));
 const LoremIpsumGenerator = lazy(() => import("./pages/tools/LoremIpsumGenerator"));
-const OrganizedPDF = lazy(() =>import("./pages/tools/OrganizedPDF"));
+const OrganizedPdf = lazy(() => import("./pages/tools/OrganizedPDF"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
