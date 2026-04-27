@@ -99,7 +99,7 @@ setLoading(true);
 
 try{
 
-const res = await fetch("http://localhost:5000/api/protect-pdf",{
+const res = await fetch("import.meta.env.VITE_API_URL/api/protect-pdf",{
 method:"POST",
 body:formData
 });

@@ -37,7 +37,7 @@ const AIContentWriter = () => {
       // লোকাল স্টোরেজ থেকে টোকেন নেওয়া
       const token = localStorage.getItem("token"); 
 
-      const response = await fetch("http://localhost:5000/api/ai/generate-content", {
+      const response = await fetch("import.meta.env.VITE_API_URL/api/ai/generate-content", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

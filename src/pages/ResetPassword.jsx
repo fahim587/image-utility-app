@@ -23,7 +23,7 @@ export default function ResetPassword() {
 
       // Sending token in URL and password in body as required by your backend
       const response = await axios.post(
-        `http://localhost:5000/api/auth/reset-password/${token}`, 
+        `import.meta.env.VITE_API_URL/api/auth/reset-password/${token}`, 
         { password } 
       );
 

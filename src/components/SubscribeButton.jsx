@@ -17,7 +17,7 @@ export default function SubscribeButton({ plan }) {
       }
 
       // 2. Request to create payment session
-      const res = await axios.post("http://localhost:5000/api/payment/create-checkout-session", {
+      const res = await axios.post("import.meta.env.VITE_API_URL/api/payment/create-checkout-session", {
         plan,
         userId,
       });

@@ -33,7 +33,7 @@ export default function AIImageExplainer() {
       setLoading(true);
       setResult(""); // নতুন রেজাল্টের জন্য আগেরটা মুছে ফেলা
 
-      const res = await fetch("http://localhost:5000/api/ai/explain-image", {
+      const res = await fetch("import.meta.env.VITE_API_URL/api/ai/explain-image", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

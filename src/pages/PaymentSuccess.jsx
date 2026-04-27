@@ -20,7 +20,7 @@ export default function PaymentSuccess() {
 
       try {
         // তোমার ব্যাকএন্ডের verify-payment রাউটে রিকোয়েস্ট পাঠানো হচ্ছে
-        const res = await axios.post(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/payment/verify-payment`, {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL || "import.meta.env.VITE_API_URL"}/api/payment/verify-payment`, {
           sessionId,
         });
 

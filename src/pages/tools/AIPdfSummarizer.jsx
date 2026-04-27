@@ -87,7 +87,7 @@ export default function AIPDFSummarizer() {
         return;
       }
 
-      const res = await fetch("http://localhost:5000/api/ai/generate-content", {
+      const res = await fetch("import.meta.env.VITE_API_URL/api/ai/generate-content", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
