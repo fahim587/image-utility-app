@@ -19,7 +19,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-/* ================= CORS (FIXED) ================= */
+/* ================= CORS ================= */
 app.use(
   cors({
     origin: [
@@ -38,11 +38,12 @@ app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-/* ================= STATIC FILES ================= */
+/* ================= STATIC ================= */
 app.use("/uploads", express.static("uploads"));
 
 /* ================= MONGODB ================= */
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
 
@@ -94,7 +95,6 @@ app.post("/api/upload-url", async (req, res) => {
     });
 
     const contentType = response.headers["content-type"];
-
     const base64 = Buffer.from(response.data).toString("base64");
 
     res.json({
@@ -118,10 +118,7 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
   }
 
   const inputPath = file.path;
-  const outputPath = path.join(
-    UPLOADS_DIR,
-    `protected-${Date.now()}.pdf`
-  );
+  const outputPath = path.join(UPLOADS_DIR, `protected-${Date.now()}.pdf`);
 
   const cmd = `qpdf --encrypt ${password} ${password} 256 -- "${inputPath}" "${outputPath}"`;
 
@@ -153,7 +150,6 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
     const base64 = signature.split(",")[1] || signature;
-
     const img = await pdfDoc.embedPng(Buffer.from(base64, "base64"));
 
     const page = pdfDoc.getPages()[0];
@@ -167,10 +163,7 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
 
     const output = await pdfDoc.save();
 
-    const outPath = path.join(
-      UPLOADS_DIR,
-      `signed-${Date.now()}.pdf`
-    );
+    const outPath = path.join(UPLOADS_DIR, `signed-${Date.now()}.pdf`);
 
     fs.writeFileSync(outPath, output);
 

@@ -1,4 +1,3 @@
-// routes/ai.js
 import express from "express";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -10,17 +9,17 @@ dotenv.config();
 
 const router = express.Router();
 
-// -------- CONFIG --------
+// ================= CONFIG =================
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const COMMON_HEADERS = {
   Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
   "Content-Type": "application/json",
-  "HTTP-Referer": "http://localhost:5173",
-  "X-Title": "SiteNexa AI Tools" // আপনার প্রোজেক্ট নাম অনুযায়ী
+  "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:5173",
+  "X-Title": "SiteNexa AI Tools"
 };
 
-// -------- API KEY CHECK --------
+// ================= KEY CHECK =================
 if (!process.env.OPENROUTER_API_KEY) {
   console.error("❌ OPENROUTER_API_KEY missing in .env");
 }
@@ -49,7 +48,7 @@ router.post("/explain-image", async (req, res) => {
             content: [
               {
                 type: "text",
-                text: "Analyze this image in detail. Objects, colors, environment, text, and atmosphere."
+                text: "Analyze this image in detail including objects, colors, environment, text and context."
               },
               {
                 type: "image_url",
@@ -63,16 +62,25 @@ router.post("/explain-image", async (req, res) => {
       { headers: COMMON_HEADERS }
     );
 
-    const result = response.data.choices?.[0]?.message?.content;
-    res.json({ success: true, explanation: result });
+    const result = response.data?.choices?.[0]?.message?.content || "";
+
+    return res.json({
+      success: true,
+      explanation: result
+    });
+
   } catch (error) {
     console.error("Image Explainer Error:", error.response?.data || error.message);
-    res.status(500).json({ success: false, error: "Image analysis failed" });
+
+    return res.status(500).json({
+      success: false,
+      error: "Image analysis failed"
+    });
   }
 });
 
 // ============================================================
-// 2️⃣ AI CONTENT WRITER (ফিক্সড এন্ডপয়েন্ট: /generate-content)
+// 2️⃣ AI CONTENT WRITER
 // ============================================================
 router.post("/generate-content", verifyToken, async (req, res) => {
   try {
@@ -80,10 +88,13 @@ router.post("/generate-content", verifyToken, async (req, res) => {
     const userId = req.userId;
 
     if (!topic) {
-      return res.status(400).json({ success: false, error: "Topic is required" });
+      return res.status(400).json({
+        success: false,
+        error: "Topic is required"
+      });
     }
 
-    // -------- FREE USER USAGE LIMIT --------
+    // ================= USAGE LIMIT =================
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -93,20 +104,21 @@ router.post("/generate-content", verifyToken, async (req, res) => {
       date: { $gte: today }
     });
 
-    // আপনার লজিক অনুযায়ী: ৩ বার ফ্রি লিমিট
     if (usageCount >= 3) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Free limit reached. Upgrade to PRO for unlimited access." 
+      return res.status(403).json({
+        success: false,
+        message: "Free limit reached. Upgrade to PRO for unlimited access."
       });
     }
 
     // Save usage
-    await Usage.create({ userId, tool: "ai-content-writer", date: new Date() });
+    await Usage.create({
+      userId,
+      tool: "ai-content-writer",
+      date: new Date()
+    });
 
-    // -------- AI API CALL --------
-    const selectedLanguage = language || "English";
-
+    // ================= AI REQUEST =================
     const response = await axios.post(
       OPENROUTER_URL,
       {
@@ -114,12 +126,20 @@ router.post("/generate-content", verifyToken, async (req, res) => {
         messages: [
           {
             role: "system",
-            content: "You are a professional SEO content writer who writes long, structured, and high-quality blog articles."
+            content:
+              "You are a professional SEO content writer. Write structured, high-quality articles."
           },
           {
             role: "user",
-            content: `Write a detailed SEO optimized article about: "${topic}" in ${selectedLanguage}. 
-            Minimum 800-1200 words, including Engaging H1, Intro, H2/H3 headings, Bullet points, FAQ, and Conclusion.`
+            content: `Write a detailed SEO article about: "${topic}" in ${language || "English"}.
+Include:
+- Title
+- Introduction
+- Headings (H2/H3)
+- Bullet points
+- FAQ
+- Conclusion
+Length: 800-1200 words.`
           }
         ],
         max_tokens: 2000,
@@ -128,11 +148,20 @@ router.post("/generate-content", verifyToken, async (req, res) => {
       { headers: COMMON_HEADERS }
     );
 
-    const result = response.data.choices?.[0]?.message?.content;
-    res.json({ success: true, content: result });
+    const result = response.data?.choices?.[0]?.message?.content || "";
+
+    return res.json({
+      success: true,
+      content: result
+    });
+
   } catch (error) {
     console.error("Content Writer Error:", error.response?.data || error.message);
-    res.status(500).json({ success: false, error: "Content generation failed" });
+
+    return res.status(500).json({
+      success: false,
+      error: "Content generation failed"
+    });
   }
 });
 
