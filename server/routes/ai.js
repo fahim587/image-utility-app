@@ -9,9 +9,9 @@ dotenv.config();
 
 const router = express.Router();
 
-// ================= CONFIG =================
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+/* ================= SAFE HEADERS ================= */
 const COMMON_HEADERS = {
   Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
   "Content-Type": "application/json",
@@ -19,14 +19,12 @@ const COMMON_HEADERS = {
   "X-Title": "SiteNexa AI Tools"
 };
 
-// ================= KEY CHECK =================
+/* ================= KEY CHECK ================= */
 if (!process.env.OPENROUTER_API_KEY) {
-  console.error("❌ OPENROUTER_API_KEY missing in .env");
+  console.error("❌ OPENROUTER_API_KEY missing");
 }
 
-// ============================================================
-// 1️⃣ AI IMAGE EXPLAINER
-// ============================================================
+/* ================= AI IMAGE EXPLAIN ================= */
 router.post("/explain-image", async (req, res) => {
   try {
     const { image } = req.body;
@@ -34,7 +32,7 @@ router.post("/explain-image", async (req, res) => {
     if (!image) {
       return res.status(400).json({
         success: false,
-        error: "Image URL or Base64 required"
+        error: "Image required"
       });
     }
 
@@ -48,7 +46,7 @@ router.post("/explain-image", async (req, res) => {
             content: [
               {
                 type: "text",
-                text: "Analyze this image in detail including objects, colors, environment, text and context."
+                text: "Describe this image clearly."
               },
               {
                 type: "image_url",
@@ -59,29 +57,31 @@ router.post("/explain-image", async (req, res) => {
         ],
         max_tokens: 1000
       },
-      { headers: COMMON_HEADERS }
+      {
+        headers: COMMON_HEADERS,
+        timeout: 30000
+      }
     );
 
-    const result = response.data?.choices?.[0]?.message?.content || "";
+    const result =
+      response.data?.choices?.[0]?.message?.content || "";
 
-    return res.json({
+    res.json({
       success: true,
       explanation: result
     });
 
   } catch (error) {
-    console.error("Image Explainer Error:", error.response?.data || error.message);
+    console.error("Image Error:", error.response?.data || error.message);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: "Image analysis failed"
     });
   }
 });
 
-// ============================================================
-// 2️⃣ AI CONTENT WRITER
-// ============================================================
+/* ================= AI CONTENT WRITER ================= */
 router.post("/generate-content", verifyToken, async (req, res) => {
   try {
     const { topic, language } = req.body;
@@ -90,11 +90,11 @@ router.post("/generate-content", verifyToken, async (req, res) => {
     if (!topic) {
       return res.status(400).json({
         success: false,
-        error: "Topic is required"
+        error: "Topic required"
       });
     }
 
-    // ================= USAGE LIMIT =================
+    /* ================= SAFE USAGE CHECK ================= */
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -107,18 +107,17 @@ router.post("/generate-content", verifyToken, async (req, res) => {
     if (usageCount >= 3) {
       return res.status(403).json({
         success: false,
-        message: "Free limit reached. Upgrade to PRO for unlimited access."
+        message: "Free limit reached"
       });
     }
 
-    // Save usage
     await Usage.create({
       userId,
       tool: "ai-content-writer",
       date: new Date()
     });
 
-    // ================= AI REQUEST =================
+    /* ================= AI REQUEST ================= */
     const response = await axios.post(
       OPENROUTER_URL,
       {
@@ -126,39 +125,34 @@ router.post("/generate-content", verifyToken, async (req, res) => {
         messages: [
           {
             role: "system",
-            content:
-              "You are a professional SEO content writer. Write structured, high-quality articles."
+            content: "You are a professional SEO writer."
           },
           {
             role: "user",
-            content: `Write a detailed SEO article about: "${topic}" in ${language || "English"}.
-Include:
-- Title
-- Introduction
-- Headings (H2/H3)
-- Bullet points
-- FAQ
-- Conclusion
-Length: 800-1200 words.`
+            content: `Write SEO article about: ${topic} in ${language || "English"}`
           }
         ],
-        max_tokens: 2000,
+        max_tokens: 1500,
         temperature: 0.7
       },
-      { headers: COMMON_HEADERS }
+      {
+        headers: COMMON_HEADERS,
+        timeout: 30000
+      }
     );
 
-    const result = response.data?.choices?.[0]?.message?.content || "";
+    const result =
+      response.data?.choices?.[0]?.message?.content || "";
 
-    return res.json({
+    res.json({
       success: true,
       content: result
     });
 
   } catch (error) {
-    console.error("Content Writer Error:", error.response?.data || error.message);
+    console.error("AI Error:", error.response?.data || error.message);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: "Content generation failed"
     });

@@ -19,6 +19,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+/* ================= COEP + SECURITY FIX ================= */
+app.use((req, res, next) => {
+  res.removeHeader("Cross-Origin-Embedder-Policy");
+  res.removeHeader("Cross-Origin-Opener-Policy");
+  next();
+});
+
 /* ================= CORS ================= */
 app.use(
   cors({
@@ -27,6 +34,7 @@ app.use(
       "https://googiz.com",
       "https://image-utility-app-0qf0.onrender.com"
     ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
@@ -42,12 +50,12 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use("/uploads", express.static("uploads"));
 
 /* ================= MONGODB ================= */
+mongoose.set("strictQuery", true);
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
-
-mongoose.set("strictQuery", true);
 
 /* ================= ROUTES ================= */
 app.use("/api/ai", aiRoutes);
@@ -126,6 +134,7 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
     if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
 
     if (err) {
+      console.error("PDF Protect Error:", err);
       return res.status(500).json({ error: "PDF protect failed" });
     }
 
@@ -162,19 +171,19 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
     });
 
     const output = await pdfDoc.save();
-
     const outPath = path.join(UPLOADS_DIR, `signed-${Date.now()}.pdf`);
 
     fs.writeFileSync(outPath, output);
-
     fs.unlinkSync(file.path);
 
     res.download(outPath, () => {
       if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
     });
   } catch (err) {
-    console.error(err);
+    console.error("Sign Error:", err);
+
     if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
     res.status(500).json({ error: "Sign failed" });
   }
 });
@@ -217,7 +226,7 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
       }
     );
 
-    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    fs.unlinkSync(file.path);
 
     res.json({
       success: true,
@@ -225,7 +234,10 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
         response.data?.choices?.[0]?.message?.content || "",
     });
   } catch (err) {
+    console.error("AI Error:", err.message);
+
     if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
     res.status(500).json({ error: "AI failed" });
   }
 });
