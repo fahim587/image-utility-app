@@ -5,11 +5,12 @@ import {
   FileText, Sparkles, Copy, Download, Upload, Loader2, 
   ChevronDown, FileSearch, Trash2, Check 
 } from "lucide-react";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.entry";
 
-// PDF.js Worker সেটআপ
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// FIXED IMPORTS FOR VERCEL BUILD
+import * as pdfjsLib from "pdfjs-dist";
+
+// PDF.js Worker setup using CDN for maximum compatibility
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export default function AIPDFSummarizer() {
   const [file, setFile] = useState(null);
@@ -27,7 +28,9 @@ export default function AIPDFSummarizer() {
       reader.onload = async () => {
         try {
           const typedArray = new Uint8Array(reader.result);
-          const pdf = await pdfjsLib.getDocument(typedArray).promise;
+          // Fixed getDocument parameter
+          const loadingTask = pdfjsLib.getDocument({ data: typedArray });
+          const pdf = await loadingTask.promise;
 
           // প্রথম পেজ থেকে প্রিভিউ ইমেজ জেনারেট
           const page = await pdf.getPage(1);
@@ -89,8 +92,9 @@ export default function AIPDFSummarizer() {
         return;
       }
 
-      // আপডেট করা এপিআই কল (ব্যাকটিক ব্যবহার করা হয়েছে)
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/generate-content`, {
+      // API Call with proper template literal and environment variable
+      const apiUrl = import.meta.env.VITE_API_URL || "https://your-backend.onrender.com";
+      const res = await fetch(`${apiUrl}/api/ai/generate-content`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
