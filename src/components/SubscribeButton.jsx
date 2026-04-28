@@ -16,11 +16,11 @@ export default function SubscribeButton({ plan }) {
         return;
       }
 
-      // 2. Request to create payment session
-      const res = await axios.post("import.meta.env.VITE_API_URL/api/payment/create-checkout-session", {
-        plan,
-        userId,
-      });
+      // ২. Request to create payment session
+const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/payment/create-checkout-session`, {
+  plan,
+  userId,
+});
 
       // 3. Redirect to Stripe Checkout
       if (res.data.url) {
