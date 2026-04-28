@@ -19,8 +19,7 @@ const AIVideoScript = () => {
         setResult(""); // নতুন রেজাল্টের জন্য আগেরটা ক্লিয়ার করা
         
         try {
-            const response = await fetch("import.meta.env.VITE_API_URL/api/ai/generate-content", {
-                method: "POST",
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/generate-content`, {                method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     topic: `Write a viral video script for: ${topic}. Include Hook, Body, and Call to Action.`, 

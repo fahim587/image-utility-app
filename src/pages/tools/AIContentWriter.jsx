@@ -34,15 +34,14 @@ const AIContentWriter = () => {
     setResult(""); 
     
     try {
-      // লোকাল স্টোরেজ থেকে টোকেন নেওয়া
       const token = localStorage.getItem("token"); 
 
-      const response = await fetch("import.meta.env.VITE_API_URL/api/ai/generate-content", {
+      // আপডেট করা এপিআই ইউআরএল (ব্যাকটিক ব্যবহার করা হয়েছে)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/generate-content`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          // টোকেনটি এখানে পাঠানো হচ্ছে যাতে verifyToken কাজ করে
-          "Authorization": `Bearer ${token}` 
+          "Authorization": token ? `Bearer ${token}` : "" 
         },
         body: JSON.stringify({ topic: topic, language: "English" })
       });
@@ -52,7 +51,6 @@ const AIContentWriter = () => {
       if (response.ok && data.success) {
         setResult(data.content);
       } else {
-        // যদি ফ্রি লিমিট শেষ হয় বা অন্য কোনো এরর আসে
         alert(data.message || data.error || "Generation failed");
       }
     } catch (error) {
@@ -139,7 +137,7 @@ const AIContentWriter = () => {
                 <button
                   onClick={handleGenerate}
                   disabled={loading}
-                  className="w-full md:flex-1 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-bold text-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+                  className="w-full md:flex-1 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-bold text-xl shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-70"
                 >
                   {loading ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} />}
                   {loading ? "Writing Content..." : "Generate SEO Article"}
@@ -150,7 +148,7 @@ const AIContentWriter = () => {
                     onClick={() => setShowOptions(!showOptions)}
                     className="w-full md:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-5 rounded-2xl font-bold flex items-center justify-between gap-3 transition-all"
                   >
-                    Actions <ChevronDown size={20} className={`transition-transform ${showOptions ? 'rotate-180' : ''}`} />
+                    Actions <ChevronDown size={20} className={showOptions ? 'rotate-180' : ''} />
                   </button>
                   
                   <AnimatePresence>
@@ -161,23 +159,23 @@ const AIContentWriter = () => {
                         exit={{ opacity: 0, y: 10 }}
                         className="absolute bottom-full mb-3 right-0 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-50"
                       >
-                        <div className="px-3 py-2">
+                        <div className="px-3 py-2 border-b">
                           <select 
                             value={fileType}
                             onChange={(e) => setFileType(e.target.value)}
-                            className="w-full p-2 bg-gray-50 border rounded-lg text-sm font-bold outline-none"
+                            className="w-full p-2 bg-gray-50 border rounded-lg text-sm font-bold outline-none text-gray-700"
                           >
-                            <option value="txt">TXT File</option>
-                            <option value="md">Markdown</option>
-                            <option value="html">HTML File</option>
-                            <option value="doc">DOC File</option>
+                            <option value="txt">Plain Text (.txt)</option>
+                            <option value="md">Markdown (.md)</option>
+                            <option value="html">HTML File (.html)</option>
+                            <option value="doc">Word Doc (.doc)</option>
                           </select>
                         </div>
-                        <button onClick={copyToClipboard} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-left text-sm font-bold text-gray-700 transition-colors">
+                        <button onClick={copyToClipboard} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-left text-sm font-bold text-gray-700">
                           <Copy size={16} /> {copied ? "Copied!" : "Copy Content"}
                         </button>
-                        <button onClick={downloadResult} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-left text-sm font-bold text-gray-700 transition-colors">
-                          <Download size={16} /> Download Result
+                        <button onClick={downloadResult} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-left text-sm font-bold text-gray-700">
+                          <Download size={16} /> Download File
                         </button>
                         <button onClick={() => {setTopic(""); setResult(""); setShowOptions(false)}} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 rounded-xl text-left text-sm font-bold text-red-600 border-t mt-1">
                           <Trash2 size={16} /> Clear All

@@ -3,11 +3,12 @@ import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FileText, Sparkles, Copy, Download, Upload, Loader2, 
-  ChevronDown, FileSearch, Trash2, Check // Check ইমপোর্ট করা হয়েছে
+  ChevronDown, FileSearch, Trash2, Check 
 } from "lucide-react";
-import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.min?url";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.entry";
 
+// PDF.js Worker সেটআপ
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export default function AIPDFSummarizer() {
@@ -19,6 +20,7 @@ export default function AIPDFSummarizer() {
   const [pdfPreview, setPdfPreview] = useState(null);
   const [fileType, setFileType] = useState("txt");
 
+  // PDF থেকে টেক্সট এক্সট্রাক্ট এবং প্রিভিউ জেনারেট করা
   const extractTextFromPDF = async (file) => {
     const reader = new FileReader();
     return new Promise((resolve, reject) => {
@@ -27,7 +29,7 @@ export default function AIPDFSummarizer() {
           const typedArray = new Uint8Array(reader.result);
           const pdf = await pdfjsLib.getDocument(typedArray).promise;
 
-          // প্রথম পেজ থেকে প্রিভিউ ইমেজ জেনারেট করা
+          // প্রথম পেজ থেকে প্রিভিউ ইমেজ জেনারেট
           const page = await pdf.getPage(1);
           const viewport = page.getViewport({ scale: 0.5 });
           const canvas = document.createElement("canvas");
@@ -87,14 +89,16 @@ export default function AIPDFSummarizer() {
         return;
       }
 
-      const res = await fetch("import.meta.env.VITE_API_URL/api/ai/generate-content", {
+      // আপডেট করা এপিআই কল (ব্যাকটিক ব্যবহার করা হয়েছে)
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/generate-content`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}` 
         },
         body: JSON.stringify({
-          topic: `Summarize this PDF content clearly in bullet points:\n${text}`
+          topic: `Summarize this PDF content clearly in bullet points:\n${text}`,
+          type: "pdf-summary"
         })
       });
 
@@ -150,7 +154,7 @@ export default function AIPDFSummarizer() {
         <meta name="description" content="Fast, secure, and accurate AI PDF analysis." />
       </Helmet>
 
-      <div className="min-h-screen bg-[#F8FAFC] pt-20 pb-20 px-6 font-sans">
+      <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-20 px-6 font-sans">
         <div className="max-w-5xl mx-auto">
           
           <div className="text-center mb-12">
@@ -167,7 +171,7 @@ export default function AIPDFSummarizer() {
               
               <div className="space-y-4">
                 <label className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
-                  <FileText size={18} /> Document Source
+                  <FileText size={18} className="text-blue-600" /> Document Source
                 </label>
                 
                 <div className="relative group border-2 border-dashed border-gray-200 rounded-[2rem] p-4 transition-all hover:border-blue-500 bg-gray-50 min-h-[300px] flex items-center justify-center overflow-hidden text-center">
@@ -218,7 +222,7 @@ export default function AIPDFSummarizer() {
                 </button>
 
                 <div className="relative w-full md:w-auto">
-                  <button onClick={() => setShowOptions(!showOptions)} className="w-full md:w-auto bg-gray-100 hover:bg-gray-200 px-8 py-5 rounded-2xl font-bold flex items-center justify-between gap-3 transition-all">
+                  <button onClick={() => setShowOptions(!showOptions)} className="w-full md:w-auto bg-gray-100 hover:bg-gray-200 px-8 py-5 rounded-2xl font-bold flex items-center justify-between gap-3 transition-all text-gray-700">
                     Actions <ChevronDown size={20} className={showOptions ? 'rotate-180' : ''} />
                   </button>
                   
@@ -226,18 +230,18 @@ export default function AIPDFSummarizer() {
                     {showOptions && (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full mb-3 right-0 w-56 bg-white rounded-2xl shadow-2xl border p-2 z-50">
                         <div className="p-2">
-                          <select value={fileType} onChange={(e) => setFileType(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg text-sm font-bold outline-none">
+                          <select value={fileType} onChange={(e) => setFileType(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg text-sm font-bold outline-none text-gray-700">
                             <option value="txt">TXT File</option>
                             <option value="md">Markdown</option>
                             <option value="html">HTML File</option>
                             <option value="doc">DOC File</option>
                           </select>
                         </div>
-                        <button onClick={copyText} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700">
+                        <button onClick={copyText} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700 transition-colors">
                           <Copy size={16} /> {copied ? "Copied!" : "Copy Summary"}
                         </button>
-                        <button onClick={downloadSummary} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700">
-                          <Download size={16} /> Download
+                        <button onClick={downloadSummary} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700 transition-colors">
+                          <Download size={16} /> Download Result
                         </button>
                         <button onClick={() => {setFile(null); setSummary(""); setPdfPreview(null); setShowOptions(false)}} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 rounded-xl text-sm font-bold text-red-600 border-t mt-1">
                           <Trash2 size={16} /> Remove File
@@ -254,7 +258,7 @@ export default function AIPDFSummarizer() {
                     <div className="flex items-center gap-3 mb-6 text-blue-600 font-black uppercase tracking-widest">
                        <Sparkles size={20} /> <span>AI Summary Result</span>
                     </div>
-                    <div className="p-8 bg-gray-50 rounded-[2.5rem] text-gray-800 leading-relaxed border border-gray-100 text-lg shadow-inner whitespace-pre-wrap">
+                    <div className="p-8 bg-gray-50 rounded-[2.5rem] text-gray-800 leading-relaxed border border-gray-100 text-lg shadow-inner whitespace-pre-wrap font-medium">
                       {summary}
                     </div>
                   </motion.div>

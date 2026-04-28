@@ -1,11 +1,22 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { 
-  Volume2, Upload, Download, Loader2, 
-  Zap, CheckCircle2, FileAudio, X, Info, ChevronDown
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Volume2,
+  Upload,
+  Loader2,
+  Zap,
+  CheckCircle2,
+  FileAudio,
+  X,
+  Info,
+  ChevronDown,
+  Download,
+  RotateCcw
 } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
+
 import RelatedTools from "../../components/RelatedTools";
 
 const ffmpeg = new FFmpeg();
@@ -14,102 +25,112 @@ const VolumeBooster = () => {
   const [file, setFile] = useState(null);
   const [audioURL, setAudioURL] = useState(null);
   const [boostLevel, setBoostLevel] = useState("2");
+  const [format, setFormat] = useState("mp3");
+
+  const [normalize, setNormalize] = useState(false);
+  const [bassBoost, setBassBoost] = useState(false);
+  const [noiseReduction, setNoiseReduction] = useState(false);
+
   const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [isFFmpegReady, setIsFFmpegReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
+  const [outputURL, setOutputURL] = useState(null);
 
-  // মেমোরি ক্লিনআপ ফাংশন
-  const revokeURL = useCallback(() => {
+  // Revoke URLs to prevent memory leaks
+  const revokeURLs = useCallback(() => {
     if (audioURL) URL.revokeObjectURL(audioURL);
-  }, [audioURL]);
+    if (outputURL) URL.revokeObjectURL(outputURL);
+  }, [audioURL, outputURL]);
 
-  // FFmpeg লোড করার ফাংশন (useCallback ব্যবহার করে ESLint ওয়ার্নিং ফিক্স করা হয়েছে)
-  const prepareFFmpeg = useCallback(async () => {
-    if (loaded || ffmpeg.loaded) {
-      setLoaded(true);
-      return;
-    }
+  // Load FFmpeg Core
+  const loadFFmpeg = async () => {
     try {
       const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
       await ffmpeg.load({
         coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm")
       });
-      setLoaded(true);
+      setIsFFmpegReady(true);
     } catch (err) {
       console.error("FFmpeg Load Error:", err);
     }
-  }, [loaded]);
+  };
 
   useEffect(() => {
-    // প্রোগ্রেস ট্র্যাকিং
+    loadFFmpeg();
     ffmpeg.on("progress", ({ progress: p }) => {
       setProgress(Math.round(p * 100));
     });
-    
-    prepareFFmpeg();
-
-    // কম্পোনেন্ট আনমাউন্ট হলে মেমোরি ক্লিয়ার করা
-    return () => revokeURL();
-  }, [revokeURL, prepareFFmpeg]);
+    return () => revokeURLs();
+  }, []);
 
   const handleUpload = (e) => {
     const selected = e.target.files[0];
     if (selected && selected.type.startsWith("audio/")) {
-      revokeURL(); // আগের ফাইল মেমোরি থেকে মুছে ফেলা
+      revokeURLs();
       setFile(selected);
       setAudioURL(URL.createObjectURL(selected));
       setIsDone(false);
+      setOutputURL(null);
       setProgress(0);
     }
   };
 
-  const boostVolume = async () => {
+  const processAudio = async () => {
     if (!file || loading) return;
+
     setLoading(true);
     setIsDone(false);
     setProgress(0);
 
     try {
-      if (!loaded) await prepareFFmpeg();
-
-      const inputExt = file.name.split('.').pop();
-      const inputName = `input_${Date.now()}.${inputExt}`;
-      const outputName = `output_${Date.now()}.mp3`;
+      const inputExt = file.name.split(".").pop();
+      const inputName = `input.${inputExt}`;
+      const outputName = `output.${format}`;
 
       await ffmpeg.writeFile(inputName, await fetchFile(file));
 
+      // Filter Chain
+      let filters = [];
+      filters.push(`volume=${boostLevel}`);
+      if (normalize) filters.push("loudnorm");
+      if (bassBoost) filters.push("bass=g=10:f=100:w=0.5"); // Optimized bass boost
+      if (noiseReduction) filters.push("afftdn");
+
       await ffmpeg.exec([
-        "-i", inputName, 
-        "-filter:a", `volume=${boostLevel}`, 
+        "-i", inputName,
+        "-af", filters.join(","),
         outputName
       ]);
 
       const data = await ffmpeg.readFile(outputName);
-      const url = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/mp3' }));
+      const url = URL.createObjectURL(
+        new Blob([data.buffer], { type: `audio/${format}` })
+      );
 
+      setOutputURL(url);
+      setIsDone(true);
+
+      // Trigger Auto-download
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Boosted_GOOGIZ_${file.name}`;
-      document.body.appendChild(a);
+      a.download = `Boosted_GOOGIZ_${Date.now()}.${format}`;
       a.click();
-      document.body.removeChild(a);
 
-      setIsDone(true);
     } catch (err) {
-      console.error("Boosting Error:", err);
-      alert("Boosting failed. Try a smaller file or refresh the page.");
+      console.error("Processing Error:", err);
+      alert("Error processing audio. Please try a different file.");
     } finally {
       setLoading(false);
     }
   };
 
   const reset = () => {
-    revokeURL();
+    revokeURLs();
     setFile(null);
     setAudioURL(null);
+    setOutputURL(null);
     setIsDone(false);
     setProgress(0);
   };
@@ -117,132 +138,143 @@ const VolumeBooster = () => {
   return (
     <div className="min-h-screen pt-24 pb-16 px-4 bg-[#fcfcfd]">
       <div className="max-w-4xl mx-auto">
-        
-        {/* Header */}
-        <div className="text-center mb-10">
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="inline-flex items-center justify-center w-12 h-12 bg-amber-50 rounded-2xl mb-4 border border-amber-100 shadow-sm">
-            <Volume2 className="text-amber-500" size={24} />
-          </motion.div>
-          <h1 className="text-3xl font-black text-amber-500">Volume Booster</h1>
-          <p className="text-gray-400 font-bold mt-1 text-[10px] uppercase tracking-[0.3em]">Enhance Audio Amplitude Safely</p>
-        </div>
+        <header className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-50 rounded-2xl mb-4 border border-amber-100 shadow-sm">
+            <Volume2 className="text-amber-500" size={28} />
+          </div>
+          <h1 className="text-4xl font-black text-slate-900">
+            Volume <span className="text-amber-500">Booster</span>
+          </h1>
+          <p className="text-gray-400 font-bold mt-2 text-xs uppercase tracking-widest">
+            Professional Audio Enhancer Online
+          </p>
+        </header>
 
-        {/* Interface */}
-        <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl shadow-gray-200/40 overflow-hidden grid lg:grid-cols-5 mb-8">
-          
-          <div className="lg:col-span-3 p-8 border-r border-gray-50 bg-[#fafafb]/50">
-            <AnimatePresence mode="wait">
-              {!file ? (
-                <motion.label key="up" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-[350px] border-2 border-dashed border-gray-200 rounded-[32px] cursor-pointer hover:bg-amber-50/30 hover:border-amber-300 transition-all group">
-                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                    <Upload className="text-amber-500" />
+        <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl overflow-hidden grid lg:grid-cols-5 mb-10">
+          {/* Main Upload Section */}
+          <div className="lg:col-span-3 p-8 border-r border-gray-50 flex flex-col justify-center bg-gray-50/30">
+            {!file ? (
+              <label className="flex flex-col items-center justify-center h-[350px] border-3 border-dashed border-gray-200 rounded-[32px] cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition-all group">
+                <div className="bg-white p-5 rounded-full shadow-md group-hover:scale-110 transition-transform">
+                  <Upload className="text-amber-500" size={40} />
+                </div>
+                <p className="font-bold text-slate-700 mt-6 text-lg">Choose Audio File</p>
+                <p className="text-gray-400 text-sm mt-1">MP3, WAV, OGG supported</p>
+                <input type="file" hidden accept="audio/*" onChange={handleUpload} />
+              </label>
+            ) : (
+              <div className="space-y-8 animate-in fade-in zoom-in duration-300">
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 relative">
+                  <div className="bg-amber-100 p-3 rounded-xl text-amber-600">
+                    <FileAudio size={32} />
                   </div>
-                  <p className="text-lg font-bold text-gray-700">Upload audio for boosting</p>
-                  <input type="file" hidden accept="audio/*" onChange={handleUpload} />
-                </motion.label>
-              ) : (
-                <motion.div key="pre" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600"><FileAudio size={28} /></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-800 truncate">{file.name}</p>
-                      <p className="text-[10px] text-gray-400 uppercase">Input Audio File</p>
-                    </div>
-                    <button onClick={reset} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"><X size={20} /></button>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-slate-800 truncate">{file.name}</p>
+                    <p className="text-xs text-gray-400 uppercase">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
                   </div>
-                  {audioURL && <audio src={audioURL} controls className="w-full h-12" />}
-                  
-                  {loading && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-black text-blue-600 uppercase">
-                        <span>Boosting Volume...</span>
-                        <span>{progress}%</span>
-                      </div>
-                      <div className="h-2 bg-blue-50 rounded-full overflow-hidden">
-                        <motion.div className="h-full bg-blue-500" animate={{ width: `${progress}%` }} />
-                      </div>
+                  <button onClick={reset} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-gray-100">
+                   <audio src={audioURL} controls className="w-full" />
+                </div>
+
+                {loading && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-xs font-bold text-amber-600 uppercase tracking-tighter">
+                      <span>Processing Audio...</span>
+                      <span>{progress}%</span>
                     </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        className="bg-amber-500 h-full shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="lg:col-span-2 p-8 space-y-8 flex flex-col justify-center">
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Select Boost Level</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "1.5x (Soft)", val: "1.5" },
-                  { label: "2x (Normal)", val: "2" },
-                  { label: "3x (Loud)", val: "3" },
-                  { label: "4x (Extreme)", val: "4" }
-                ].map((b) => (
-                  <button 
-                    key={b.val} 
-                    onClick={() => {setBoostLevel(b.val); setIsDone(false);}} 
-                    className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all ${boostLevel === b.val ? "bg-gray-900 text-white shadow-lg" : "bg-gray-50 text-gray-400 hover:bg-gray-100"}`}
+          {/* Controls Section */}
+          <div className="lg:col-span-2 p-8 space-y-8 bg-white">
+            <div className="space-y-4">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Zap size={14} className="text-amber-500" /> Boost Intensity
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {["1.5", "2", "3", "4", "5"].map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setBoostLevel(level)}
+                    className={`py-2 rounded-xl font-bold transition-all ${boostLevel === level ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' : 'bg-gray-50 text-slate-500 hover:bg-gray-100'}`}
                   >
-                    {b.label}
+                    {level}x
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex gap-3">
-              <Info size={18} className="text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-[10px] leading-relaxed text-amber-800 font-medium ">
-                Boosting too high (3x+) may cause audio distortion depending on the original quality.
-              </p>
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Enhancements</label>
+              {[
+                { id: "norm", label: "Normalize Audio", state: normalize, set: setNormalize },
+                { id: "bass", label: "Bass Boost", state: bassBoost, set: setBassBoost },
+                { id: "noise", label: "Noise Reduction", state: noiseReduction, set: setNoiseReduction }
+              ].map((opt) => (
+                <label key={opt.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors">
+                  <span className="text-sm font-bold text-slate-700">{opt.label}</span>
+                  <input
+                    type="checkbox"
+                    checked={opt.state}
+                    onChange={(e) => opt.set(e.target.checked)}
+                    className="w-5 h-5 accent-amber-500"
+                  />
+                </label>
+              ))}
             </div>
 
-            <button 
-              onClick={boostVolume} 
-              disabled={!file || loading} 
-              className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all ${isDone ? "bg-emerald-500 text-white shadow-emerald-100" : "bg-amber-500 text-white shadow-amber-100 hover:bg-amber-600 disabled:opacity-50"}`}
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Format</label>
+              <select
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
+                className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+              >
+                <option value="mp3">MP3 High Quality</option>
+                <option value="wav">WAV Lossless</option>
+                <option value="ogg">OGG Vorbis</option>
+              </select>
+            </div>
+
+            <button
+              onClick={processAudio}
+              disabled={!file || loading || !isFFmpegReady}
+              className="w-full py-5 bg-slate-900 text-white font-black rounded-[20px] shadow-xl hover:bg-amber-600 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
             >
-              {loading ? <><Loader2 className="animate-spin" /> Processing...</> : isDone ? <><CheckCircle2 /> Success</> : <><Zap fill="currentColor" /> Boost & Save</>}
+              {!isFFmpegReady ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} /> Initializing...
+                </>
+              ) : loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} /> Processing
+                </>
+              ) : isDone ? (
+                <>
+                  <Download size={18} /> Download Again
+                </>
+              ) : (
+                <>
+                  <Zap size={18} fill="currentColor" /> Boost & Download
+                </>
+              )}
             </button>
           </div>
-        </div>
-
-        {/* How to Use Section */}
-        <div className="max-w-4xl mx-auto mb-10">
-          <button 
-            onClick={() => setShowGuide(!showGuide)}
-            className="w-full flex items-center justify-between p-6 bg-white border border-gray-100 rounded-[24px] shadow-sm hover:bg-gray-50 transition-colors"
-          >
-            <span className="font-bold text-gray-700 flex items-center gap-2">
-              <Info size={20} className="text-amber-500" /> How to use Volume Booster?
-            </span>
-            <ChevronDown className={`transition-transform duration-300 ${showGuide ? "rotate-180" : ""}`} />
-          </button>
-          
-          <AnimatePresence>
-            {showGuide && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="p-8 bg-white border-x border-b border-gray-100 rounded-b-[24px] space-y-4">
-                  <div className="flex gap-4">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">1</span>
-                    <p className="text-gray-600 text-sm ">Click the upload area to select your audio file (MP3, WAV, etc.) from your device.</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">2</span>
-                    <p className="text-gray-600 text-sm ">Choose your desired boost level from 1.5x up to 4x. Normal (2x) is recommended for clarity.</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">3</span>
-                    <p className="text-gray-600 text-sm ">Click "Boost & Save". The tool will process the audio in your browser and automatically download the enhanced file.</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         <RelatedTools categoryId="audio" />
