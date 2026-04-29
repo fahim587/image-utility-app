@@ -6,7 +6,6 @@ import path from "path";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import axios from "axios";
-import { exec } from "child_process";
 import { PDFDocument } from "pdf-lib";
 
 // routes
@@ -32,7 +31,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://googiz.com",
-      "https://image-utility-app-0qf0.onrender.com"
+      "https://image-utility-app-0qf0.onrender.com",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -63,6 +62,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 
 /* ================= UPLOAD SETUP ================= */
+
 const UPLOADS_DIR = "uploads";
 
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -75,6 +75,7 @@ const upload = multer({
 });
 
 /* ================= HEALTH CHECK ================= */
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -83,6 +84,7 @@ app.get("/", (req, res) => {
 });
 
 /* ================= FILE UPLOAD URL ================= */
+
 app.post("/api/upload-url", async (req, res) => {
   const { url, isGoogleDrive, fileId } = req.body;
 
@@ -115,8 +117,9 @@ app.post("/api/upload-url", async (req, res) => {
   }
 });
 
-/* ================= PDF PROTECT ================= */
-app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
+/* ================= PDF PROTECT (UPDATED) ================= */
+
+app.post("/api/protect-pdf", upload.single("file"), async (req, res) => {
   const { password } = req.body;
   const file = req.file;
 
@@ -125,26 +128,39 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
     return res.status(400).json({ error: "File & password required" });
   }
 
-  const inputPath = file.path;
-  const outputPath = path.join(UPLOADS_DIR, `protected-${Date.now()}.pdf`);
+  try {
+    const pdfBytes = fs.readFileSync(file.path);
 
-  const cmd = `qpdf --encrypt ${password} ${password} 256 -- "${inputPath}" "${outputPath}"`;
+    const pdfDoc = await PDFDocument.load(pdfBytes);
 
-  exec(cmd, (err) => {
-    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+    const protectedPdf = await pdfDoc.save({
+      userPassword: password,
+      ownerPassword: password,
+    });
 
-    if (err) {
-      console.error("PDF Protect Error:", err);
-      return res.status(500).json({ error: "PDF protect failed" });
-    }
+    const outputPath = path.join(
+      UPLOADS_DIR,
+      `protected-${Date.now()}.pdf`
+    );
+
+    fs.writeFileSync(outputPath, protectedPdf);
+
+    fs.unlinkSync(file.path);
 
     res.download(outputPath, () => {
       if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
     });
-  });
+  } catch (err) {
+    console.error("PDF Protect Error:", err);
+
+    if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
+    res.status(500).json({ error: "PDF protect failed" });
+  }
 });
 
 /* ================= SIGN PDF ================= */
+
 app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
   const { signature } = req.body;
   const file = req.file;
@@ -171,6 +187,7 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
     });
 
     const output = await pdfDoc.save();
+
     const outPath = path.join(UPLOADS_DIR, `signed-${Date.now()}.pdf`);
 
     fs.writeFileSync(outPath, output);
@@ -189,6 +206,7 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
 });
 
 /* ================= AI IMAGE EXPLAIN ================= */
+
 app.post("/api/explain-image", upload.single("image"), async (req, res) => {
   const file = req.file;
 
@@ -230,8 +248,7 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
 
     res.json({
       success: true,
-      explanation:
-        response.data?.choices?.[0]?.message?.content || "",
+      explanation: response.data?.choices?.[0]?.message?.content || "",
     });
   } catch (err) {
     console.error("AI Error:", err.message);
@@ -243,6 +260,7 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
 });
 
 /* ================= START SERVER ================= */
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
