@@ -134,8 +134,8 @@ const BlurImage = () => {
       {/* Header - Centered Title */}
       <div className="flex flex-col items-center text-center mb-10 gap-6">
         <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
-            Pro <span className="text-blue-600">Privacy</span> Tool
+          <h1 className="text-4xl font-black text-blue-600 tracking-tight">
+           BLUR IMAGE <span className="text-blue-600"></span> TOOL
           </h1>
           <p className="text-gray-500 font-medium">Professional AI face masking and data blurring</p>
         </div>
