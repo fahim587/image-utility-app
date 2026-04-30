@@ -6,6 +6,7 @@ import path from "path";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import axios from "axios";
+import { exec } from "child_process";
 import { PDFDocument } from "pdf-lib";
 
 // routes
@@ -18,7 +19,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-/* ================= COEP + SECURITY FIX ================= */
+/* ================= SECURITY ================= */
 app.use((req, res, next) => {
   res.removeHeader("Cross-Origin-Embedder-Policy");
   res.removeHeader("Cross-Origin-Opener-Policy");
@@ -33,24 +34,19 @@ app.use(
       "https://googiz.com",
       "https://image-utility-app-0qf0.onrender.com",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
-/* ================= RAW WEBHOOK ================= */
+/* ================= BODY ================= */
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
-
-/* ================= BODY PARSER ================= */
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 /* ================= STATIC ================= */
 app.use("/uploads", express.static("uploads"));
 
-/* ================= MONGODB ================= */
-mongoose.set("strictQuery", true);
-
+/* ================= DB ================= */
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
@@ -61,8 +57,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 
-/* ================= UPLOAD SETUP ================= */
-
+/* ================= UPLOAD ================= */
 const UPLOADS_DIR = "uploads";
 
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -74,17 +69,12 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-/* ================= HEALTH CHECK ================= */
-
+/* ================= HEALTH ================= */
 app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "GOOGIZ Server Running 🚀",
-  });
+  res.json({ success: true, message: "GOOGIZ Server Running 🚀" });
 });
 
-/* ================= FILE UPLOAD URL ================= */
-
+/* ================= FILE URL ================= */
 app.post("/api/upload-url", async (req, res) => {
   const { url, isGoogleDrive, fileId } = req.body;
 
@@ -101,25 +91,20 @@ app.post("/api/upload-url", async (req, res) => {
 
     const response = await axios.get(targetUrl, {
       responseType: "arraybuffer",
-      timeout: 15000,
     });
 
-    const contentType = response.headers["content-type"];
     const base64 = Buffer.from(response.data).toString("base64");
 
     res.json({
-      url: `data:${contentType};base64,${base64}`,
-      contentType,
+      url: `data:${response.headers["content-type"]};base64,${base64}`,
     });
   } catch (err) {
-    console.error("Upload Error:", err.message);
     res.status(500).json({ error: "File load failed" });
   }
 });
 
-/* ================= PDF PROTECT (UPDATED) ================= */
-
-app.post("/api/protect-pdf", upload.single("file"), async (req, res) => {
+/* ================= PROTECT PDF (REAL FIX) ================= */
+app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
   const { password } = req.body;
   const file = req.file;
 
@@ -128,39 +113,57 @@ app.post("/api/protect-pdf", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "File & password required" });
   }
 
-  try {
-    const pdfBytes = fs.readFileSync(file.path);
+  const input = file.path;
+  const output = path.join(UPLOADS_DIR, `protected-${Date.now()}.pdf`);
 
-    const pdfDoc = await PDFDocument.load(pdfBytes);
+  // ✅ REAL PASSWORD USING QPDF
+  const cmd = `qpdf --encrypt ${password} ${password} 256 -- "${input}" "${output}"`;
 
-    const protectedPdf = await pdfDoc.save({
-      userPassword: password,
-      ownerPassword: password,
+  exec(cmd, (err) => {
+    fs.unlinkSync(input);
+
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "PDF protect failed" });
+    }
+
+    res.download(output, () => {
+      if (fs.existsSync(output)) fs.unlinkSync(output);
     });
+  });
+});
 
-    const outputPath = path.join(
-      UPLOADS_DIR,
-      `protected-${Date.now()}.pdf`
-    );
+/* ================= UNLOCK PDF (NEW FIX) ================= */
+app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
+  const { password } = req.body;
+  const file = req.file;
 
-    fs.writeFileSync(outputPath, protectedPdf);
-
-    fs.unlinkSync(file.path);
-
-    res.download(outputPath, () => {
-      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-    });
-  } catch (err) {
-    console.error("PDF Protect Error:", err);
-
-    if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-
-    res.status(500).json({ error: "PDF protect failed" });
+  if (!file || !password) {
+    if (file) fs.unlinkSync(file.path);
+    return res.status(400).json({ error: "File & password required" });
   }
+
+  const input = file.path;
+  const output = path.join(UPLOADS_DIR, `unlocked-${Date.now()}.pdf`);
+
+  // ✅ REMOVE PASSWORD
+  const cmd = `qpdf --password=${password} --decrypt "${input}" "${output}"`;
+
+  exec(cmd, (err) => {
+    fs.unlinkSync(input);
+
+    if (err) {
+      console.error(err);
+      return res.status(400).json({ error: "Wrong password or failed" });
+    }
+
+    res.download(output, () => {
+      if (fs.existsSync(output)) fs.unlinkSync(output);
+    });
+  });
 });
 
 /* ================= SIGN PDF ================= */
-
 app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
   const { signature } = req.body;
   const file = req.file;
@@ -174,7 +177,7 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
     const pdfBytes = fs.readFileSync(file.path);
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
-    const base64 = signature.split(",")[1] || signature;
+    const base64 = signature.split(",")[1];
     const img = await pdfDoc.embedPng(Buffer.from(base64, "base64"));
 
     const page = pdfDoc.getPages()[0];
@@ -197,22 +200,15 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
       if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
     });
   } catch (err) {
-    console.error("Sign Error:", err);
-
-    if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-
     res.status(500).json({ error: "Sign failed" });
   }
 });
 
-/* ================= AI IMAGE EXPLAIN ================= */
-
+/* ================= AI ================= */
 app.post("/api/explain-image", upload.single("image"), async (req, res) => {
   const file = req.file;
 
-  if (!file) {
-    return res.status(400).json({ error: "Image required" });
-  }
+  if (!file) return res.status(400).json({ error: "Image required" });
 
   try {
     const base64 = fs.readFileSync(file.path).toString("base64");
@@ -239,7 +235,6 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
         },
       }
     );
@@ -248,19 +243,14 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
 
     res.json({
       success: true,
-      explanation: response.data?.choices?.[0]?.message?.content || "",
+      explanation: response.data.choices[0].message.content,
     });
   } catch (err) {
-    console.error("AI Error:", err.message);
-
-    if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-
     res.status(500).json({ error: "AI failed" });
   }
 });
 
-/* ================= START SERVER ================= */
-
+/* ================= START ================= */
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
