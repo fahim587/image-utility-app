@@ -32,7 +32,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://googiz.com",
-      "https://image-utility-app-0qf0.onrender.com",
+      "https://image-utility-app-docker.onrender.com",
     ],
     credentials: true,
   })
