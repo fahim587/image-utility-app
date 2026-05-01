@@ -2,6 +2,8 @@ import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "react-hot-toast";
+import SeoManager from "./components/SeoManager";
+import ScrollToTop from "./components/ScrollToTop"; // ইমপোর্ট করা হয়েছে
 
 // Static Imports
 import Navbar from "./components/Navbar";
@@ -110,8 +112,10 @@ const PageLoader = () => (
   </div>
 );
 
+// Layout কম্পোনেন্টে ScrollToTop যুক্ত করা হয়েছে
 const Layout = () => (
   <div className="flex flex-col min-h-screen bg-[#F9FAFB]">
+    <ScrollToTop /> {/* এখানে বসানো হয়েছে */}
     <Navbar />
     <main className="flex-grow pt-20">
       <Suspense fallback={<PageLoader />}>
@@ -127,7 +131,7 @@ const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <Home /> },
+      { index: true,element: (<><SeoManager toolName="Googiz | AI Powered Tools" /><Home /></>) },
       { path: "dashboard", element: <ProtectedRoute><Dashboard /></ProtectedRoute> },
       { path: "pricing", element: <Pricing /> },
       { path: "subscribe", element: <Subscribe /> },
@@ -135,96 +139,94 @@ const router = createBrowserRouter([
       { path: "payment-cancel", element: <PaymentCancel /> },
       { path: "all-tools", element: <AllTools /> },
       
-      // Category Landing Pages (যেগুলো ফুটার থেকে লিঙ্ক করা)
-      { path: "ai-tools", element: <ProRoute><AIMagic /></ProRoute> },
-      { path: "image-tools", element: <ImageTools /> },
-      { path: "pdf-tools", element: <PdfTools /> },
-      { path: "video-tools", element: <VideoTools /> },
-      { path: "audio-tools", element: <AudioTools /> },
-      { path: "utility-tools", element: <UtilityTools /> },
-
+      // Category Landing Pages
+      { path: "ai-tools", element: <ProRoute><><SeoManager toolName="AI Magic Tools" /><AIMagic /></></ProRoute> },
+      { path: "image-tools", element: <><SeoManager toolName="Image Editing Tools" /><ImageTools /></> },
+      { path: "pdf-tools", element: <><SeoManager toolName="PDF Management Tools" /><PdfTools /></> },
+      { path: "video-tools", element: <><SeoManager toolName="Video Editing Tools" /><VideoTools /></> },
+      { path: "audio-tools", element: <><SeoManager toolName="Audio Editing Tools" /><AudioTools /></> },
+      { path: "utility-tools", element: <><SeoManager toolName="Utility Tools" /><UtilityTools /></> },
       // AI Tools
-      { path: "ai-content-writer", element: <ProRoute><AIContentWriter /></ProRoute> },
-      { path: "ai-video-script", element: <ProRoute><AIVideoScript /></ProRoute> },
-      { path: "ai-image-explainer", element: <ProRoute><AIImageExplainer /></ProRoute> },
-      { path: "ai-pdf-summarizer", element: <ProRoute><AIPdfSummarizer /></ProRoute> },
+      { path: "ai-content-writer", element: <ProRoute><><SeoManager toolName="AI Content Writer" /><AIContentWriter /></></ProRoute> },
+      { path: "ai-video-script", element: <ProRoute><><SeoManager toolName="AI Video Script" /><AIVideoScript /></></ProRoute> },
+      { path: "ai-image-explainer", element: <ProRoute><><SeoManager toolName="AI Image Explainer" /><AIImageExplainer /></></ProRoute> },
+      { path: "ai-pdf-summarizer", element: <ProRoute><><SeoManager toolName="AI PDF Summary" /><AIPdfSummarizer /></></ProRoute> },
 
       // Image Tools
-      { path: "compress", element: <CompressImage /> },
-      { path: "resize", element: <ResizeImage /> },
-      { path: "crop", element: <CropImage /> },
-      { path: "convert", element: <ConvertFormat /> },
-      { path: "rotate", element: <RotateImage /> },
-      { path: "flip", element: <FlipImage /> },
-      { path: "watermark", element: <AddWatermark /> },
-      { path: "add-text", element: <AddText /> },
-      { path: "blur", element: <BlurImage /> },
-      { path: "filters", element: <ImageFilters /> },
-      { path: "image-to-pdf", element: <ImageToPdf /> },
-      { path: "remove-bg", element: <RemoveBg /> },
-      { path: "heic-to-jpg", element: <HeicToJpg /> },
-      { path: "svg-optimizer", element: <SvgOptimizer /> },
-      { path: "image-to-text", element: <ImageToText /> },
-      { path: "color-palette-generator", element: <ColorPaletteGenerator /> },
+      { path: "compress", element: <><SeoManager toolName="Compress Image" /><CompressImage /></> },
+      { path: "resize", element: <><SeoManager toolName="Resize Image" /><ResizeImage /></> },
+      { path: "crop", element: <><SeoManager toolName="Crop Image" /><CropImage /></> },
+      { path: "convert", element: <><SeoManager toolName="Convert Format" /><ConvertFormat /></> },
+      { path: "rotate", element: <><SeoManager toolName="Rotate Image" /><RotateImage /></> },
+      { path: "flip", element: <><SeoManager toolName="Flip Image" /><FlipImage /></> },
+      { path: "watermark", element: <><SeoManager toolName="Add Watermark" /><AddWatermark /></> },
+      { path: "add-text", element: <><SeoManager toolName="Add Text to Image" /><AddText /></> },
+      { path: "blur", element: <><SeoManager toolName="Blur Image" /><BlurImage /></> },
+      { path: "filters", element: <><SeoManager toolName="Image Filters" /><ImageFilters /></> },
+      { path: "image-to-pdf", element: <><SeoManager toolName="Image to PDF" /><ImageToPdf /></> },
+      { path: "remove-bg", element: <><SeoManager toolName="Remove Background" /><RemoveBg /></> },
+      { path: "heic-to-jpg", element: <><SeoManager toolName="HEIC to JPG" /><HeicToJpg /></> },
+      { path: "svg-optimizer", element: <><SeoManager toolName="SVG Optimizer" /><SvgOptimizer /></> },
+      { path: "image-to-text", element: <><SeoManager toolName="Image to Text (OCR)" /><ImageToText /></> },
+      { path: "color-palette-generator", element: <><SeoManager toolName="Color Palette Generator" /><ColorPaletteGenerator /></> },
 
       // PDF Tools
-      { path: "merge-pdf", element: <MergePdf /> },
-      { path: "split-pdf", element: <SplitPdf /> },
-      { path: "compress-pdf", element: <CompressPdf /> },
-      { path: "rotate-pdf", element: <RotatePdf /> },
-      { path: "pdf-to-jpg", element: <PdfToJpg /> },
-      { path: "jpg-to-pdf", element: <JpgToPdf /> },
-      { path: "watermark-pdf", element: <WatermarkPdf /> },
-      { path: "protect-pdf", element: <ProtectPdf /> },
-      { path: "add-page-numbers", element: <AddPageNumbers /> },
-      { path: "remove-pdf-pages", element: <RemovePDFPages /> },
-      { path: "unlock-pdf", element: <UnlockPDF /> },
-      { path: "sign-pdf", element: <SignPdf /> },
-      { path: "organized-pdf", element: <OrganizedPdf /> },
-      { path: "metadata-editor", element: <MetadataEditor /> },
-      { path: "html-to-pdf", element: <HtmlToPdf /> },
-      { path: "edit-pdf", element: <EditPdf /> },
+      { path: "merge-pdf", element: <><SeoManager toolName="Merge PDF" /><MergePdf /></> },
+      { path: "split-pdf", element: <><SeoManager toolName="Split PDF" /><SplitPdf /></> },
+      { path: "compress-pdf", element: <><SeoManager toolName="Compress PDF" /><CompressPdf /></> },
+      { path: "rotate-pdf", element: <><SeoManager toolName="Rotate PDF" /><RotatePdf /></> },
+      { path: "pdf-to-jpg", element: <><SeoManager toolName="PDF to JPG" /><PdfToJpg /></> },
+      { path: "jpg-to-pdf", element: <><SeoManager toolName="JPG to PDF" /><JpgToPdf /></> },
+      { path: "watermark-pdf", element: <><SeoManager toolName="Add Watermark to PDF" /><WatermarkPdf /></> },
+      { path: "protect-pdf", element: <><SeoManager toolName="Protect PDF" /><ProtectPdf /></> },
+      { path: "add-page-numbers", element: <><SeoManager toolName="Add Page Numbers to PDF" /><AddPageNumbers /></> },
+      { path: "remove-pdf-pages", element: <><SeoManager toolName="Remove PDF Pages" /><RemovePDFPages /></> },
+      { path: "unlock-pdf", element: <><SeoManager toolName="Unlock PDF" /><UnlockPDF /></> },
+      { path: "sign-pdf", element: <><SeoManager toolName="Sign PDF" /><SignPdf /></> },
+      { path: "organized-pdf", element: <><SeoManager toolName="Organized PDF" /><OrganizedPdf /></> },
+      { path: "metadata-editor", element: <><SeoManager toolName="PDF Metadata Editor" /><MetadataEditor /></> },
+      { path: "html-to-pdf", element: <><SeoManager toolName="HTML to PDF" /><HtmlToPdf /></> },
+      { path: "edit-pdf", element: <><SeoManager toolName="Edit PDF" /><EditPdf /></> },
 
       // Video & Audio
-      { path: "video-cutter", element: <VideoCutter /> },
-      { path: "video-compress", element: <VideoCompress /> },
-      { path: "video-convert", element: <VideoConvert /> },
-      { path: "video-rotate", element: <VideoRotate /> },
-      { path: "video-crop", element: <VideoCrop /> },
-      { path: "video-to-gif", element: <VideoToGif /> },
-      { path: "mp3-cutter", element: <Mp3Cutter /> },
-      { path: "audio-convert", element: <AudioConvert /> },
-      { path: "volume-booster", element: <VolumeBooster /> },
-      { path: "audio-speed", element: <AudioSpeed /> },
+      { path: "video-cutter", element: <><SeoManager toolName="Video Cutter" /><VideoCutter /></> },
+      { path: "video-compress", element: <><SeoManager toolName="Video Compressor" /><VideoCompress /></> },
+      { path: "video-convert", element: <><SeoManager toolName="Video Converter" /><VideoConvert /></> },
+      { path: "video-rotate", element: <><SeoManager toolName="Video Rotate" /><VideoRotate /></> },
+      { path: "video-crop", element: <><SeoManager toolName="Video Crop" /><VideoCrop /></> },
+      { path: "video-to-gif", element: <><SeoManager toolName="Video to GIF" /><VideoToGif /></> },
+      { path: "mp3-cutter", element: <><SeoManager toolName="MP3 Cutter" /><Mp3Cutter /></> },
+      { path: "audio-convert", element: <><SeoManager toolName="Audio Converter" /><AudioConvert /></> },
+      { path: "volume-booster", element: <><SeoManager toolName="Volume Booster" /><VolumeBooster /></> },
+      { path: "audio-speed", element: <><SeoManager toolName="Audio Speed Changer" /><AudioSpeed /></> },
 
       // Utility
-      { path: "qr-generator", element: <QrGenerator /> },
-      { path: "barcode", element: <Barcode /> },
-      { path: "password-gen", element: <PasswordGen /> },
-      { path: "base64-encode", element: <Base64Encode /> },
-      { path: "base64-decode", element: <Base64Decode /> },
-      { path: "url-encode", element: <UrlEncode /> },
-      { path: "url-decode", element: <UrlDecode /> },
-      { path: "case-converter", element: <CaseConverter /> },
-      { path: "json-formatter", element: <JsonFormatter /> },
-      { path: "color-picker", element: <ColorPicker /> },
-      { path: "temp-email", element: <TempEmail /> },
-      { path: "typing-test", element: <TypingTest /> },
-      { path: "lorem-ipsum", element: <LoremIpsumGenerator /> },
+      { path: "qr-generator", element: <><SeoManager toolName="QR Code Generator" /><QrGenerator /></> },
+      { path: "barcode", element: <><SeoManager toolName="Barcode Generator" /><Barcode /></> },
+      { path: "password-gen", element: <><SeoManager toolName="Password Generator" /><PasswordGen /></> },
+      { path: "base64-encode", element: <><SeoManager toolName="Base64 Encoder" /><Base64Encode /></> },
+      { path: "base64-decode", element: <><SeoManager toolName="Base64 Decoder" /><Base64Decode /></> },
+      { path: "url-encode", element: <><SeoManager toolName="URL Encoder" /><UrlEncode /></> },
+      { path: "url-decode", element: <><SeoManager toolName="URL Decoder" /><UrlDecode /></> },
+      { path: "case-converter", element: <><SeoManager toolName="Case Converter" /><CaseConverter /></> },
+      { path: "json-formatter", element: <><SeoManager toolName="JSON Formatter" /><JsonFormatter /></> },
+      { path: "color-picker", element: <><SeoManager toolName="Online Color Picker" /><ColorPicker /></> },
+      { path: "temp-email", element: <><SeoManager toolName="Temporary Email Service" /><TempEmail /></> },
+      { path: "typing-test", element: <><SeoManager toolName="Online Typing Test" /><TypingTest /></> },
+      { path: "lorem-ipsum", element: <><SeoManager toolName="Lorem Ipsum Generator" /><LoremIpsumGenerator /></> },
 
-      // Auth, Footer & Others
+      // Auth & Others
       { path: "login", element: <AuthPage /> },
       { path: "signup", element: <AuthPage /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "reset-password/:token", element: <ResetPassword /> },
-      { path: "privacy", element: <PrivacyPolicy /> },
-      { path: "terms", element: <Terms /> },
-      { path: "contact", element: <Contact /> },
-      { path: "about", element: <AboutUs /> },
+      { path: "privacy", element: <><SeoManager toolName="Privacy Policy" /><PrivacyPolicy /></> },
+      { path: "terms", element: <><SeoManager toolName="Terms and Conditions" /><Terms /></> },
+      { path: "contact", element: <><SeoManager toolName="Contact Us" /><Contact /></> },
+      { path: "about", element: <><SeoManager toolName="About Us" /><AboutUs /></> },
       { path: "blog", element: <Blog /> },
       { path: "blog/:slug", element: <BlogPost /> },
 
-      // 404
       { path: "*", element: <NotFound /> },
     ],
   },

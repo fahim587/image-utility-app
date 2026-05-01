@@ -8,8 +8,8 @@ import {
     Music, Settings, Scissors, Files, Lock, QrCode, Key, 
     Braces, Palette, Volume2, FastForward, Type, Droplets, 
     Layers, ShieldCheck, Image, FlipHorizontal, Sparkles,
-    Hash, CaseUpper, Link as LinkIcon, ScanBarcode, Eye, EyeOff, Search,Mail,Zap, Languages,
-    FileX, Unlock,PenTool, LayoutGrid, Tag, Globe,FileEdit, User,
+    Hash, CaseUpper, Link as LinkIcon, ScanBarcode, Eye, EyeOff, Search, Mail, Zap, Languages,
+    FileX, Unlock, PenTool, LayoutGrid, Tag, Globe, FileEdit, User,
 } from "lucide-react";
 
 
@@ -20,9 +20,7 @@ const Navbar = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     
-    
     const location = useLocation();
-
     const [prevPath, setPrevPath] = useState(location.pathname);
 
     useEffect(() => {
@@ -49,7 +47,6 @@ const Navbar = () => {
     }, []);
 
     const navigate = useNavigate();
-
 
     const toolCategories = useMemo(() => [
         {
@@ -99,8 +96,8 @@ const Navbar = () => {
                 { name: "JPG to PDF", path: "/jpg-to-pdf", icon: <FileImage size={14} /> },
                 { name: "Watermark PDF", path: "/watermark-pdf", icon: <ShieldCheck size={14} /> },
                 { name: "Protect PDF", path: "/protect-pdf", icon: <Lock size={14} /> },
-                {name: "Add Page Numbers", path:"/add-page-numbers", icon: <Hash size={14}/> },
-                {name: "Remove PDF Pages", path:"/remove-pdf-pages", icon: <FileX size={14}/> },
+                { name: "Add Page Numbers", path: "/add-page-numbers", icon: <Hash size={14}/> },
+                { name: "Remove PDF Pages", path: "/remove-pdf-pages", icon: <FileX size={14}/> },
                 { name: "Unlock PDF", path: "/unlock-pdf", icon: <Unlock size={14} /> },
                 { name: "Sign PDF", path: "/sign-pdf", icon: <PenTool size={14} /> },
                 { name: "Organized PDF", path: "/organized-pdf", icon: <LayoutGrid size={14} /> },
@@ -179,12 +176,11 @@ const Navbar = () => {
                 <nav className={`relative flex items-center justify-between px-6 h-16 rounded-3xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-2xl transition-all duration-500 ${scrolled ? "bg-white/80 shadow-lg" : "bg-white/50"}`}>
                     
                     <Link to="/" onClick={closeAllMenus} className="flex items-center gap-2.5 group shrink-0">
-    <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-        <img src="/vite.svg" alt="GOOGIZ Logo" className="w-full h-full object-contain" />
-    </div>
-    
-    <span className="text-xl font-black text-[#010326] tracking-tight">GOOGIZ<span className="text-[#010326]">.</span></span>
-</Link>
+                        <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <img src="/vite.svg" alt="GOOGIZ Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <span className="text-xl font-black text-[#010326] tracking-tight">GOOGIZ<span className="text-[#010326]">.</span></span>
+                    </Link>
 
                     <div className="hidden lg:flex items-center gap-1 mx-4">
                         {toolCategories.map((category) => (
@@ -256,7 +252,11 @@ const Navbar = () => {
                                         exit={{ opacity: 0, y: 10 }}
                                         className="absolute right-0 top-[120%] w-75 md:w-100 bg-white rounded-3xl shadow-2xl border border-slate-100 p-4"
                                     >
-                                        <div className="relative">
+                                        <div className="relative flex items-center">
+                                            {/* Search Icon Container fixed at left */}
+                                            <div className="absolute left-4 w-6 shrink-0 flex items-center justify-center pointer-events-none">
+                                                <Search className="text-slate-400" size={16} />
+                                            </div>
                                             <input 
                                                 autoFocus
                                                 type="text"
@@ -265,7 +265,6 @@ const Navbar = () => {
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 className="w-full bg-slate-50 border-none rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 ring-blue-500/20"
                                             />
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                         </div>
 
                                         {searchQuery && (
@@ -293,21 +292,18 @@ const Navbar = () => {
                                 )}
                             </AnimatePresence>
                         </div>
-                          <button 
-                        onClick={() => navigate("/pricing")} 
-                        className="px-4 py-2 font-medium text-gray-700 hover:text-blue-600"
-                         >
-                         Pricing
-                    </button>
+                        <button 
+                            onClick={() => navigate("/pricing")} 
+                            className="px-4 py-2 font-medium text-gray-700 hover:text-blue-600"
+                        >
+                            Pricing
+                        </button>
 
                         <div className="hidden lg:flex items-center gap-4">
-                            
                             <Link to="/signup" className="bg-[#0583F2] text-white px-7 py-2.5 rounded-full text-sm font-bold hover:bg-[#010326] transition-all active:scale-95 shadow-none">
-                             {('Get Started')}
+                                {('Get Started')}
                             </Link>
                         </div>
-                             
-
 
                         <button className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -329,7 +325,11 @@ const Navbar = () => {
                             <button onClick={closeAllMenus} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center"><X size={20}/></button>
                         </div>
 
-                        <div className="mb-8 relative">
+                        <div className="mb-8 relative flex items-center">
+                            {/* Mobile Search Icon fixed at left */}
+                            <div className="absolute left-4 w-8 shrink-0 flex items-center justify-center pointer-events-none">
+                                <Search className="text-slate-400" size={18} />
+                            </div>
                             <input 
                                 type="text"
                                 placeholder={("Search tools...")}
@@ -337,10 +337,9 @@ const Navbar = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-slate-100 border-none rounded-2xl py-4 pl-12 pr-4 text-sm focus:ring-2 ring-blue-500/20"
                             />
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             
                             {searchQuery && (
-                                <div className="mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden">
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-10">
                                     {filteredTools.slice(0, 5).map((item) => (
                                         <Link 
                                             key={item.path}

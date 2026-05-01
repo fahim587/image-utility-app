@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import BlogMarquee from "../components/BlogMarquee";
-
+import { toolCategories } from "../data/toolsData"; // আপনার ফাইলের সঠিক পাথ দিন
 
 
 // --- Sub-component: DecorativeElements ---

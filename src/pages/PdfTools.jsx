@@ -30,23 +30,24 @@ const ToolCard = ({ to, icon: ToolIcon, title, desc, color }) => (
 
 const PdfTools = () => {
     const tools = [
-        { to: "/merge-pdf", icon: Files, color: "bg-rose-500", title: "Merge PDF", desc: "Join documents in seconds." },
-        { to: "/split-pdf", icon: Scissors, color: "bg-rose-500", title: "Split PDF", desc: "Extract specific page ranges." },
-        { to: "/compress-pdf", icon: Download, color: "bg-rose-500", title: "Compress PDF", desc: "Reduce size while keeping text sharp." },
-        { to: "/rotate-pdf", icon: RotateCw, color: "bg-rose-500", title: "Rotate PDF", desc: "Fix orientation of scanned docs." },
-        { to: "/pdf-to-jpg", icon: Image, color: "bg-rose-500", title: "PDF to JPG", desc: "High-resolution page extraction." },
-        { to: "/jpg-to-pdf", icon: FileImage, color: "bg-rose-500", title: "JPG to PDF", desc: "Standardized document creation." },
-        { to: "/watermark-pdf", icon: ShieldCheck, color: "bg-rose-500", title: "PDF Watermark", desc: "Stamps for official documentation." },
-        { to: "/protect-pdf", icon: Lock, color: "bg-rose-500", title: "Protect PDF", desc: "AES-256 password encryption." },
-        { to: "/Add Page Numbers", icon: Hash, color: "bg-rose-500", title: "PDF", desc:"Add page numbers to your PDF documents easily."},
-        { to: "/remove-pdf-pages", icon: FileText, color: "bg-rose-500", title: "PDF", desc:"Remove pages to your PDF documents easily."},
-        { to: "/unlock-pdf", icon: Lock, color: "bg-rose-500", title: "Unlock PDF", desc:"Remove password protection from PDFs."},
-        { to: "/sign-pdf", icon: FileText, color: "bg-rose-500", title: "Sign PDF", desc:"Add digital signatures to your PDF documents."},
-        { to: "/organized-pdf", icon: LayoutGrid, color: "bg-rose-500", title: "Organized PDF", desc:"Rearrange pages in your PDF documents easily."},
-        { to: "/metadata-editor", icon: Tag, color: "bg-rose-500", title: "Metadata Editor", desc:"Edit metadata in your PDF documents easily."},
-        { to: "/html-to-pdf", icon: Globe, color: "bg-rose-500", title: "HTML to PDF", desc:"Convert web pages to PDF format easily."},
-        { to: "/edit-pdf", icon: FileEdit, color: "bg-rose-500", title: "Edit PDF", desc:"Modify existing PDF documents easily."},
-    ];
+    { to: "/merge-pdf", icon: Files, color: "bg-rose-500", title: "Merge PDF", desc: "Join documents in seconds." },
+    { to: "/split-pdf", icon: Scissors, color: "bg-rose-500", title: "Split PDF", desc: "Extract specific page ranges." },
+    { to: "/compress-pdf", icon: Download, color: "bg-rose-500", title: "Compress PDF", desc: "Reduce size while keeping text sharp." },
+    { to: "/rotate-pdf", icon: RotateCw, color: "bg-rose-500", title: "Rotate PDF", desc: "Fix orientation of scanned docs." },
+    { to: "/pdf-to-jpg", icon: Image, color: "bg-rose-500", title: "PDF to JPG", desc: "High-resolution page extraction." },
+    { to: "/jpg-to-pdf", icon: FileImage, color: "bg-rose-500", title: "JPG to PDF", desc: "Standardized document creation." },
+    { to: "/watermark-pdf", icon: ShieldCheck, color: "bg-rose-500", title: "PDF Watermark", desc: "Stamps for official documentation." },
+    { to: "/protect-pdf", icon: Lock, color: "bg-rose-500", title: "Protect PDF", desc: "AES-256 password encryption." },
+    // নিচের লাইনগুলো আমি ফিক্স করে দিয়েছি
+    { to: "/add-page-numbers", icon: Hash, color: "bg-rose-500", title: "Add Page Numbers", desc:"Add page numbers to your PDF documents easily."},
+    { to: "/remove-pdf-pages", icon: FileText, color: "bg-rose-500", title: "Remove PDF Pages", desc:"Remove pages to your PDF documents easily."},
+    { to: "/unlock-pdf", icon: Lock, color: "bg-rose-500", title: "Unlock PDF", desc:"Remove password protection from PDFs."},
+    { to: "/sign-pdf", icon: FileText, color: "bg-rose-500", title: "Sign PDF", desc:"Add digital signatures to your PDF documents."},
+    { to: "/organized-pdf", icon: LayoutGrid, color: "bg-rose-500", title: "Organize PDF", desc:"Rearrange pages in your PDF documents easily."},
+    { to: "/metadata-editor", icon: Tag, color: "bg-rose-500", title: "Metadata Editor", desc:"Edit metadata in your PDF documents easily."},
+    { to: "/html-to-pdf", icon: Globe, color: "bg-rose-500", title: "HTML to PDF", desc:"Convert web pages to PDF format easily."},
+    { to: "/edit-pdf", icon: FileEdit, color: "bg-rose-500", title: "Edit PDF", desc:"Modify existing PDF documents easily."},
+];
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-20 px-6">
