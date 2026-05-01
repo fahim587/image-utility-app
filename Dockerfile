@@ -15,4 +15,4 @@ RUN npm install
 COPY . .
 
 # অ্যাপ্লিকেশন রান করুন
-CMD ["node", "server.js"]
+CMD ["node", "server/server.js"]
