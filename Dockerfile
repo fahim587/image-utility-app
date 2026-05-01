@@ -1,19 +1,24 @@
-FROM node:20
+# ১. বেস ইমেজ সেট করা
+FROM node:18-bullseye
 
-# install qpdf
-RUN apt-get update && apt-get install -y qpdf
+# ২. কিউপিডিএফ (qpdf) ইনস্টল করা - এই লাইনটিই আপনার লগে missing ছিল
+RUN apt-get update && \
+    apt-get install -y qpdf && \
+    rm -rf /var/lib/apt/lists/*
 
+# ৩. ওয়ার্কিং ডিরেক্টরি
 WORKDIR /app
 
-# install server deps
-COPY server/package*.json ./server/
-RUN cd server && npm install
+# ৪. ডিপেন্ডেন্সি ইনস্টল করা
+COPY package*.json ./
+RUN npm install
 
-# copy all files
+# ৫. সব কোড কপি করা
 COPY . .
 
-# expose port
-EXPOSE 10000
+# ৬. ফোল্ডার পারমিশন ঠিক করা
+RUN mkdir -p uploads && chmod 777 uploads
 
-# start server
-CMD ["node", "server/server.js"]
+# ৭. পোর্ট এবং রান কমান্ড
+EXPOSE 10000
+CMD ["node", "server.js"]
