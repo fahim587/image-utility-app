@@ -1,18 +1,19 @@
-FROM node:18
+FROM node:20
 
-# qpdf install
+# install qpdf
 RUN apt-get update && apt-get install -y qpdf
 
-# working dir
 WORKDIR /app
 
-# 👉 ONLY server dependencies install
+# install server deps
 COPY server/package*.json ./server/
 RUN cd server && npm install
 
-# copy all code
+# copy all files
 COPY . .
 
+# expose port
 EXPOSE 10000
 
+# start server
 CMD ["node", "server/server.js"]
