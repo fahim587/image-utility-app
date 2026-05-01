@@ -9,7 +9,6 @@ import axios from "axios";
 import { exec } from "child_process";
 import { PDFDocument } from "pdf-lib";
 
-// routes
 import aiRoutes from "./routes/ai.js";
 import authRoutes from "./routes/auth.js";
 import paymentRoutes from "./routes/payment.js";
@@ -20,6 +19,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 /* ================= SECURITY ================= */
+app.disable("x-powered-by");
+
 app.use((req, res, next) => {
   res.removeHeader("Cross-Origin-Embedder-Policy");
   res.removeHeader("Cross-Origin-Opener-Policy");
@@ -27,29 +28,45 @@ app.use((req, res, next) => {
 });
 
 /* ================= CORS ================= */
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://googiz.com",
+  "https://image-utility-app-1.onrender.com",
+  "https://image-utility-rmi8cjg9n-fahims-projects-cbd7e4c2.vercel.app",
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://googiz.com",
-      "https://image-utility-app-docker.onrender.com",
-      "https://image-utility-rmi8cjg9n-fahims-projects-cbd7e4c2.vercel.app" // এই লিঙ্কটি অবশ্যই যোগ করতে হবে
-    ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked"));
+      }
+    },
     credentials: true,
   })
 );
 
 /* ================= BODY ================= */
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 /* ================= STATIC ================= */
-app.use("/uploads", express.static("uploads"));
+const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 /* ================= DB ================= */
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    dbName: "googiz",
+  })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
 
@@ -58,19 +75,12 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 
-/* ================= UPLOAD FIXED ================= */
-const UPLOADS_DIR = "uploads";
-
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR);
-}
-
+/* ================= MULTER ================= */
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
+  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => {
-    cb(null, Date.now() + ".pdf"); // ✅ FIXED
+    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, unique + path.extname(file.originalname));
   },
 });
 
@@ -86,21 +96,22 @@ app.get("/", (req, res) => {
 
 /* ================= FILE URL ================= */
 app.post("/api/upload-url", async (req, res) => {
-  const { url, isGoogleDrive, fileId } = req.body;
-
-  if (!url && !fileId) {
-    return res.status(400).json({ error: "URL required" });
-  }
-
   try {
+    const { url, isGoogleDrive, fileId } = req.body;
+
+    if (!url && !fileId) {
+      return res.status(400).json({ error: "URL required" });
+    }
+
     let targetUrl = url;
 
-    if (isGoogleDrive || fileId) {
+    if (isGoogleDrive && fileId) {
       targetUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${process.env.GOOGLE_DRIVE_API_KEY}`;
     }
 
     const response = await axios.get(targetUrl, {
       responseType: "arraybuffer",
+      timeout: 15000,
     });
 
     const base64 = Buffer.from(response.data).toString("base64");
@@ -123,13 +134,8 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
     return res.status(400).json({ error: "File & password required" });
   }
 
-  if (file.mimetype !== "application/pdf") {
-    fs.unlinkSync(file.path);
-    return res.status(400).json({ error: "Only PDF allowed" });
-  }
-
   const input = path.resolve(file.path);
-  const output = path.resolve(`uploads/protected-${Date.now()}.pdf`);
+  const output = path.join(UPLOADS_DIR, `protected-${Date.now()}.pdf`);
 
   const cmd = `qpdf --encrypt "${password}" "${password}" 256 -- "${input}" "${output}"`;
 
@@ -137,8 +143,7 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
     fs.unlinkSync(input);
 
     if (err) {
-      console.error("QPDF ERROR:", stderr);
-      return res.status(500).json({ error: "PDF protect failed", details: stderr });
+      return res.status(500).json({ error: "PDF protect failed" });
     }
 
     res.download(output, () => {
@@ -158,7 +163,7 @@ app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
   }
 
   const input = path.resolve(file.path);
-  const output = path.resolve(`uploads/unlocked-${Date.now()}.pdf`);
+  const output = path.join(UPLOADS_DIR, `unlocked-${Date.now()}.pdf`);
 
   const cmd = `qpdf --password="${password}" --decrypt "${input}" "${output}"`;
 
@@ -166,8 +171,7 @@ app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
     fs.unlinkSync(input);
 
     if (err) {
-      console.error("UNLOCK ERROR:", stderr);
-      return res.status(400).json({ error: "Wrong password or failed", details: stderr });
+      return res.status(400).json({ error: "Wrong password or failed" });
     }
 
     res.download(output, () => {
@@ -178,15 +182,15 @@ app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
 
 /* ================= SIGN PDF ================= */
 app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
-  const { signature } = req.body;
-  const file = req.file;
-
-  if (!file || !signature) {
-    if (file) fs.unlinkSync(file.path);
-    return res.status(400).json({ error: "Missing data" });
-  }
-
   try {
+    const { signature } = req.body;
+    const file = req.file;
+
+    if (!file || !signature) {
+      if (file) fs.unlinkSync(file.path);
+      return res.status(400).json({ error: "Missing data" });
+    }
+
     const pdfBytes = fs.readFileSync(file.path);
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
@@ -202,11 +206,10 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
       height: 50,
     });
 
-    const output = await pdfDoc.save();
+    const outputBytes = await pdfDoc.save();
+    const outPath = path.join(UPLOADS_DIR, `signed-${Date.now()}.pdf`);
 
-    const outPath = path.resolve(`uploads/signed-${Date.now()}.pdf`);
-
-    fs.writeFileSync(outPath, output);
+    fs.writeFileSync(outPath, outputBytes);
     fs.unlinkSync(file.path);
 
     res.download(outPath, () => {
@@ -219,11 +222,10 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
 
 /* ================= AI ================= */
 app.post("/api/explain-image", upload.single("image"), async (req, res) => {
-  const file = req.file;
-
-  if (!file) return res.status(400).json({ error: "Image required" });
-
   try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "Image required" });
+
     const base64 = fs.readFileSync(file.path).toString("base64");
 
     const response = await axios.post(
@@ -261,6 +263,12 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "AI failed" });
   }
+});
+
+/* ================= GLOBAL ERROR ================= */
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err.message);
+  res.status(500).json({ error: "Something went wrong" });
 });
 
 /* ================= START ================= */
