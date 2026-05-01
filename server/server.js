@@ -57,15 +57,24 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 
-/* ================= UPLOAD ================= */
+/* ================= UPLOAD FIXED ================= */
 const UPLOADS_DIR = "uploads";
 
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR);
 }
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + ".pdf"); // ✅ FIXED
+  },
+});
+
 const upload = multer({
-  dest: UPLOADS_DIR,
+  storage,
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
@@ -103,7 +112,7 @@ app.post("/api/upload-url", async (req, res) => {
   }
 });
 
-/* ================= PROTECT PDF (REAL FIX) ================= */
+/* ================= PROTECT PDF ================= */
 app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
   const { password } = req.body;
   const file = req.file;
@@ -113,18 +122,22 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
     return res.status(400).json({ error: "File & password required" });
   }
 
-  const input = file.path;
-  const output = path.join(UPLOADS_DIR, `protected-${Date.now()}.pdf`);
+  if (file.mimetype !== "application/pdf") {
+    fs.unlinkSync(file.path);
+    return res.status(400).json({ error: "Only PDF allowed" });
+  }
 
-  // ✅ REAL PASSWORD USING QPDF
-  const cmd = `qpdf --encrypt ${password} ${password} 256 -- "${input}" "${output}"`;
+  const input = path.resolve(file.path);
+  const output = path.resolve(`uploads/protected-${Date.now()}.pdf`);
 
-  exec(cmd, (err) => {
+  const cmd = `qpdf --encrypt "${password}" "${password}" 256 -- "${input}" "${output}"`;
+
+  exec(cmd, (err, stdout, stderr) => {
     fs.unlinkSync(input);
 
     if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "PDF protect failed" });
+      console.error("QPDF ERROR:", stderr);
+      return res.status(500).json({ error: "PDF protect failed", details: stderr });
     }
 
     res.download(output, () => {
@@ -133,7 +146,7 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
   });
 });
 
-/* ================= UNLOCK PDF (NEW FIX) ================= */
+/* ================= UNLOCK PDF ================= */
 app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
   const { password } = req.body;
   const file = req.file;
@@ -143,18 +156,17 @@ app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
     return res.status(400).json({ error: "File & password required" });
   }
 
-  const input = file.path;
-  const output = path.join(UPLOADS_DIR, `unlocked-${Date.now()}.pdf`);
+  const input = path.resolve(file.path);
+  const output = path.resolve(`uploads/unlocked-${Date.now()}.pdf`);
 
-  // ✅ REMOVE PASSWORD
-  const cmd = `qpdf --password=${password} --decrypt "${input}" "${output}"`;
+  const cmd = `qpdf --password="${password}" --decrypt "${input}" "${output}"`;
 
-  exec(cmd, (err) => {
+  exec(cmd, (err, stdout, stderr) => {
     fs.unlinkSync(input);
 
     if (err) {
-      console.error(err);
-      return res.status(400).json({ error: "Wrong password or failed" });
+      console.error("UNLOCK ERROR:", stderr);
+      return res.status(400).json({ error: "Wrong password or failed", details: stderr });
     }
 
     res.download(output, () => {
@@ -191,7 +203,7 @@ app.post("/api/sign-pdf", upload.single("file"), async (req, res) => {
 
     const output = await pdfDoc.save();
 
-    const outPath = path.join(UPLOADS_DIR, `signed-${Date.now()}.pdf`);
+    const outPath = path.resolve(`uploads/signed-${Date.now()}.pdf`);
 
     fs.writeFileSync(outPath, output);
     fs.unlinkSync(file.path);
