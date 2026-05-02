@@ -27,13 +27,11 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
 
-    // পুরানো প্রিভিউ থাকলে ডিলিট করা
     if (previewUrl) URL.revokeObjectURL(previewUrl);
 
     setFile(selectedFile);
     setStatus('idle');
 
-    // PDF অথবা Image হলে প্রিভিউ URL তৈরি করবে
     if (selectedFile.type.startsWith('image/') || selectedFile.type === 'application/pdf') {
       const url = URL.createObjectURL(selectedFile);
       setPreviewUrl(url);
@@ -62,17 +60,22 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
 
     try {
       const response = await axios.post(API_URL, formData, {
-        responseType: 'blob',
+        responseType: 'blob', // Axios সরাসরি ব্লব রিটার্ন করবে
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // সংশোধন: সরাসরি response.data ব্যবহার করা হয়েছে, নতুন Blob তৈরি করার প্রয়োজন নেই
+      const url = window.URL.createObjectURL(response.data);
+      
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `${file.name.split('.')[0]}.${targetFormat}`);
       document.body.appendChild(link);
       link.click();
+      
+      // ক্লিনআপ
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
       setStatus('success');
     } catch (err) {
@@ -87,7 +90,7 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
     <div className="min-h-screen bg-white pt-20 pb-10">
       <div className="max-w-4xl mx-auto px-6">
         
-        {/* --- Header Section --- */}
+        {/* Header Section */}
         <div className="text-center mb-10">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
@@ -99,7 +102,7 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
           <p className="text-gray-500 text-lg font-medium">{description}</p>
         </div>
 
-        {/* --- How to use Accordion --- */}
+        {/* How to use Accordion */}
         <div className="mb-8 max-w-2xl mx-auto">
           <button 
             onClick={() => setShowHowTo(!showHowTo)}
@@ -128,7 +131,7 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
           </AnimatePresence>
         </div>
 
-        {/* --- Main Upload & Preview Box --- */}
+        {/* Main Upload & Preview Box */}
         <div className="relative max-w-3xl mx-auto">
           <div className={`relative border-2 border-dashed rounded-[2rem] p-12 transition-all text-center flex flex-col items-center justify-center min-h-[350px] ${
             file ? 'border-green-400 bg-green-50/20' : 'border-gray-200 bg-gray-50/50 hover:bg-white hover:border-rose-400'
@@ -154,7 +157,6 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
               </div>
             ) : (
               <div className="space-y-6 z-30 w-full flex flex-col items-center">
-                {/* Thumbnail Preview Area */}
                 <div className="relative group">
                   {/* IMAGE PREVIEW */}
                   {file?.type?.startsWith("image/") && previewUrl && (
@@ -174,7 +176,7 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
                     />
                   )}
 
-                  {/* FALLBACK FOR OTHER FILES (DOCX, EXCEL, ETC) */}
+                  {/* FALLBACK FOR OTHER FILES */}
                   {!file?.type?.startsWith("image/") && file?.type !== "application/pdf" && (
                     <div className="w-40 h-40 bg-white rounded-2xl flex flex-col items-center justify-center border-4 border-white shadow-xl">
                       <FileText size={48} className="text-rose-500 mb-2" />
@@ -184,7 +186,6 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
                     </div>
                   )}
 
-                  {/* REMOVE BUTTON */}
                   <button 
                     onClick={handleRemoveFile}
                     className="absolute -top-3 -right-3 bg-rose-500 text-white p-1.5 rounded-full shadow-lg hover:bg-rose-600 transition-colors z-40"
@@ -222,7 +223,6 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
             )}
           </div>
 
-          {/* Error Message */}
           {status === 'error' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-sm font-bold shadow-sm">
               <AlertCircle size={18} />
@@ -230,7 +230,6 @@ const ConverterPage = ({ title, description, targetFormat, accept, categoryId })
             </motion.div>
           )}
 
-          {/* Success Message */}
           {status === 'success' && (
              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mt-6 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 text-green-600 text-sm font-bold shadow-sm">
                <CheckCircle2 size={18} />
