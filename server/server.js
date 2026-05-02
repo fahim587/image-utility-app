@@ -34,7 +34,7 @@ app.use(
   })
 );
 
-/* ================= CORS (FULLY UPDATED FOR LIVE) ================= */
+/* ================= CORS ================= */
 const allowedOrigins = [
   "http://localhost:5173",
   "https://googiz.com",
@@ -48,14 +48,14 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); // ডেভলপমেন্টের সুবিধার্থে আপাতত এলাউ রাখা হলো
+        callback(null, true);
       }
     },
     credentials: true,
   })
 );
 
-/* ================= IMPORTANT BODY PARSERS ================= */
+/* ================= BODY PARSERS ================= */
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
@@ -66,30 +66,17 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 app.use("/uploads", express.static(UPLOADS_DIR));
 
-/* ================= DB (FIXED CASE SENSITIVITY) ================= */
+/* ================= DB ================= */
 mongoose
-  .connect(process.env.MONGO_URI, { 
-    dbName: "GOOGIZ" // এখানে 'GOOGIZ' বড় হাতের অক্ষরে দেওয়া হয়েছে ফিক্স হিসেবে
-  })
+  .connect(process.env.MONGO_URI, { dbName: "GOOGIZ" })
   .then(() => console.log("✅ MongoDB Connected to GOOGIZ"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
 
-/* ================= ROUTES ================= */
-app.use("/api/ai", aiRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/payment", paymentRoutes);
-
-/* ================= MULTER ================= */
+/* ================= MULTER SETUP ================= */
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, UPLOADS_DIR),
   filename: (_, file, cb) => {
-    cb(
-      null,
-      Date.now() +
-        "-" +
-        Math.random().toString(36).slice(2) +
-        path.extname(file.originalname)
-    );
+    cb(null, Date.now() + "-" + Math.random().toString(36).slice(2) + path.extname(file.originalname));
   },
 });
 
@@ -98,87 +85,88 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-/* ================= HEALTH CHECK ================= */
+/* ================= PDF PROTECT ROUTE (FIXED 404) ================= */
+app.post("/api/protect-pdf", upload.single("pdf"), async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!req.file || !password) {
+      return res.status(400).json({ error: "PDF and Password required" });
+    }
+
+    const inputPath = req.file.path;
+    const outputPath = path.join(UPLOADS_DIR, `protected-${req.file.filename}`);
+
+    // PDF Protect Logic using qpdf (Render এ qpdf ইনস্টল করা থাকতে হবে)
+    const command = `qpdf --encrypt ${password} ${password} 256 -- "${inputPath}" "${outputPath}"`;
+
+    exec(command, (error) => {
+      if (error) {
+        console.error("QPDF Error:", error);
+        return res.status(500).json({ error: "Failed to protect PDF" });
+      }
+
+      // ফাইল পাঠানো হয়ে গেলে ডিলিট করার ব্যবস্থা
+      res.download(outputPath, "protected.pdf", () => {
+        try {
+          if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+          if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+        } catch (err) {
+          console.error("File cleanup error:", err);
+        }
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/* ================= ROUTES ================= */
+app.use("/api/ai", aiRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/payment", paymentRoutes);
+
+/* ================= HEALTH CHECK & OTHERS ================= */
 app.get("/", (_, res) => {
   res.json({ success: true, message: "GOOGIZ Server Running 🚀" });
 });
 
-/* ================= SAFE DELETE ================= */
-const safeDelete = (filePath) => {
-  try {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  } catch {}
-};
-
-/* ================= FILE URL ================= */
 app.post("/api/upload-url", async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: "URL required" });
-
-    const response = await axios.get(url, {
-      responseType: "arraybuffer",
-      timeout: 15000,
-    });
-
+    const response = await axios.get(url, { responseType: "arraybuffer", timeout: 15000 });
     const base64 = Buffer.from(response.data).toString("base64");
-    res.json({
-      url: `data:${response.headers["content-type"]};base64,${base64}`,
-    });
+    res.json({ url: `data:${response.headers["content-type"]};base64,${base64}` });
   } catch {
     res.status(500).json({ error: "File load failed" });
   }
 });
 
-/* ================= AI IMAGE ================= */
 app.post("/api/explain-image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
-
     const base64 = fs.readFileSync(req.file.path).toString("base64");
-
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model: "openai/gpt-4o-mini",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Explain this image" },
-              {
-                type: "image_url",
-                image_url: { url: `data:image/png;base64,${base64}` },
-              },
-            ],
-          },
-        ],
+        messages: [{ role: "user", content: [{ type: "text", text: "Explain this image" }, { type: "image_url", image_url: { url: `data:image/png;base64,${base64}` } }] }],
       },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}` } }
     );
-
-    safeDelete(req.file.path);
-    res.json({
-      success: true,
-      explanation: response.data.choices?.[0]?.message?.content || "",
-    });
+    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    res.json({ success: true, explanation: response.data.choices?.[0]?.message?.content || "" });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "AI failed" });
   }
 });
 
-/* ================= GLOBAL ERROR ================= */
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR:", err.message);
   res.status(500).json({ error: "Something went wrong" });
 });
 
-/* ================= START ================= */
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
