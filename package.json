@@ -1,13 +1,13 @@
 {
-  "name": "client",
+  "name": "googiz-client",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -17,9 +17,6 @@
     "@ffmpeg/util": "^0.12.2",
     "@google/generative-ai": "^0.24.1",
     "@imgly/background-removal": "^1.7.0",
-    "@pdf-lib/upng": "^1.0.1",
-    "@use-gesture/react": "^10.3.1",
-    "audiobuffer-to-wav": "^1.0.0",
     "axios": "^1.14.0",
     "browser-image-compression": "^2.0.2",
     "colorthief": "^3.3.1",
@@ -29,16 +26,13 @@
     "framer-motion": "^12.36.0",
     "heic2any": "^0.0.4",
     "html2pdf.js": "^0.14.0",
-    "i18next-browser-languagedetector": "^8.2.1",
     "jsbarcode": "^3.12.3",
     "jspdf": "^4.2.0",
     "jszip": "^3.10.1",
     "jwt-decode": "^4.0.0",
     "lorem-ipsum": "^2.0.8",
     "lucide-react": "^0.577.0",
-    "onnxruntime-web": "^1.21.0",
     "pdf-lib": "^1.17.1",
-    "pdf-lib-encrypt": "^1.0.1",
     "pdfjs-dist": "^5.6.205",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
@@ -55,32 +49,24 @@
     "react-router-dom": "^7.13.0",
     "react-select": "^5.10.2",
     "react-signature-canvas": "^1.1.0-alpha.2",
-    "react-spring": "^10.0.3",
-    "signature_pad": "^5.1.3",
     "svgo": "^4.0.1",
     "tesseract.js": "^7.0.0",
     "wavesurfer.js": "^7.12.2"
   },
-  
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@tailwindcss/postcss": "^4.2.1",
+    "@tailwindcss/postcss": "^4.2.4",
     "@tailwindcss/vite": "^4.2.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "autoprefixer": "^10.4.27",
+    "autoprefixer": "^10.5.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "postcss": "^8.5.8",
-    "tailwindcss": "^4.2.1",
+    "postcss": "^8.5.13",
+    "tailwindcss": "^4.2.4",
     "vite": "^7.3.1"
-  },
-  "main": "eslint.config.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  }
 }

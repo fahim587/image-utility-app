@@ -16,7 +16,7 @@ const COMMON_HEADERS = {
   Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
   "Content-Type": "application/json",
   "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:5173",
-  "X-Title": "SiteNexa AI Tools"
+  "X-Title": "GOOGIZ AI Tools"
 };
 
 /* ================= KEY CHECK ================= */
@@ -24,15 +24,23 @@ if (!process.env.OPENROUTER_API_KEY) {
   console.error("❌ OPENROUTER_API_KEY missing");
 }
 
-/* ================= AI IMAGE EXPLAIN ================= */
+/* ================= UTIL SAFE RESPONSE ================= */
+const getAIResult = (response) => {
+  return (
+    response?.data?.choices?.[0]?.message?.content ||
+    "No response from AI"
+  );
+};
+
+/* ================= IMAGE EXPLAIN ================= */
 router.post("/explain-image", async (req, res) => {
   try {
     const { image } = req.body;
 
-    if (!image) {
+    if (!image || typeof image !== "string") {
       return res.status(400).json({
         success: false,
-        error: "Image required"
+        error: "Valid image required"
       });
     }
 
@@ -44,10 +52,7 @@ router.post("/explain-image", async (req, res) => {
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: "Describe this image clearly."
-              },
+              { type: "text", text: "Describe this image clearly." },
               {
                 type: "image_url",
                 image_url: { url: image }
@@ -63,12 +68,9 @@ router.post("/explain-image", async (req, res) => {
       }
     );
 
-    const result =
-      response.data?.choices?.[0]?.message?.content || "";
-
     res.json({
       success: true,
-      explanation: result
+      explanation: getAIResult(response)
     });
 
   } catch (error) {
@@ -81,20 +83,20 @@ router.post("/explain-image", async (req, res) => {
   }
 });
 
-/* ================= AI CONTENT WRITER ================= */
+/* ================= CONTENT GENERATOR ================= */
 router.post("/generate-content", verifyToken, async (req, res) => {
   try {
     const { topic, language } = req.body;
     const userId = req.userId;
 
-    if (!topic) {
+    if (!topic || typeof topic !== "string") {
       return res.status(400).json({
         success: false,
-        error: "Topic required"
+        error: "Valid topic required"
       });
     }
 
-    /* ================= SAFE USAGE CHECK ================= */
+    /* ================= DAILY USAGE CHECK ================= */
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -104,10 +106,12 @@ router.post("/generate-content", verifyToken, async (req, res) => {
       date: { $gte: today }
     });
 
-    if (usageCount >= 3) {
+    const FREE_LIMIT = 3;
+
+    if (usageCount >= FREE_LIMIT) {
       return res.status(403).json({
         success: false,
-        message: "Free limit reached"
+        message: "Daily free limit reached"
       });
     }
 
@@ -125,11 +129,11 @@ router.post("/generate-content", verifyToken, async (req, res) => {
         messages: [
           {
             role: "system",
-            content: "You are a professional SEO writer."
+            content: "You are an expert SEO content writer."
           },
           {
             role: "user",
-            content: `Write SEO article about: ${topic} in ${language || "English"}`
+            content: `Write a high-quality SEO article about: "${topic}" in ${language || "English"}`
           }
         ],
         max_tokens: 1500,
@@ -141,12 +145,9 @@ router.post("/generate-content", verifyToken, async (req, res) => {
       }
     );
 
-    const result =
-      response.data?.choices?.[0]?.message?.content || "";
-
     res.json({
       success: true,
-      content: result
+      content: getAIResult(response)
     });
 
   } catch (error) {

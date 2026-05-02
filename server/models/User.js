@@ -7,12 +7,15 @@ const userSchema = new mongoose.Schema({
 
   plan: {
     type: String,
-    enum: ["free", "pro", "lifetime"], // শুধু lowercase allowed
+    enum: ["free", "pro", "lifetime"],
     default: "free",
   },
 
   isPro: { type: Boolean, default: false },
-  subscriptionType: { type: String, default: "free" },
+  
+  // এই ফিল্ডগুলো আপনার auth.js এ আছে, তাই এখানেও থাকতে হবে
+  usageCount: { type: Number, default: 0 },
+  usageLimit: { type: Number, default: 5 },
 
   aiUsageToday: { type: Number, default: 0 },
   lastUsageDate: { type: Date, default: Date.now },
@@ -20,7 +23,6 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// 🔥 IMPORTANT FIX (overwrite error solve)
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;
