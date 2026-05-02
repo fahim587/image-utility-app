@@ -147,6 +147,41 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
   });
 });
 
+
+/* ================= UNIVERSAL OFFICE CONVERTER ================= */
+app.post("/api/convert-document", upload.single("file"), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const inputPath = req.file.path;
+    const targetFormat = req.body.targetFormat; // e.g., 'docx', 'pdf', 'xlsx', 'pptx'
+    const outputFilename = `${path.parse(req.file.originalname).name}.${targetFormat}`;
+
+    // LibreOffice Headless Command
+    const command = `libreoffice --headless --convert-to ${targetFormat} --outdir "${UPLOADS_DIR}" "${inputPath}"`;
+
+    exec(command, (error) => {
+      if (error) {
+        console.error("Conversion Error:", error);
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+        return res.status(500).json({ error: "Conversion failed" });
+      }
+
+      // LibreOffice output file path
+      const generatedFilePath = path.join(UPLOADS_DIR, path.parse(req.file.filename).name + "." + targetFormat);
+
+      res.download(generatedFilePath, outputFilename, (err) => {
+        // ফাইল ডাউনলোড হয়ে গেলে ক্লিনআপ
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+        if (fs.existsSync(generatedFilePath)) fs.unlinkSync(generatedFilePath);
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 /* ================= UNLOCK PDF ================= */
 app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
   const { password } = req.body;

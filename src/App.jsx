@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import SeoManager from "./components/SeoManager";
 import ScrollToTop from "./components/ScrollToTop"; // ইমপোর্ট করা হয়েছে
 
+
 // Static Imports
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -105,6 +106,7 @@ const TempEmail = lazy(() => import("./pages/tools/TempEmail"));
 const TypingTest = lazy(() => import("./pages/tools/TypingTest"));
 const LoremIpsumGenerator = lazy(() => import("./pages/tools/LoremIpsumGenerator"));
 const OrganizedPdf = lazy(() => import("./pages/tools/OrganizedPDF"));
+const ConverterPage = lazy(() => import("./pages/ConverterPage"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -187,6 +189,15 @@ const router = createBrowserRouter([
       { path: "metadata-editor", element: <><SeoManager toolName="PDF Metadata Editor" /><MetadataEditor /></> },
       { path: "html-to-pdf", element: <><SeoManager toolName="HTML to PDF" /><HtmlToPdf /></> },
       { path: "edit-pdf", element: <><SeoManager toolName="Edit PDF" /><EditPdf /></> },
+      // PDF Conversion Tools (New)
+{ path: "pdf-to-word", element: <><SeoManager toolName="PDF to Word" /><ConverterPage title="PDF to Word" description="Easily convert PDF to editable Word format." targetFormat="docx" accept=".pdf" /></> },
+{ path: "word-to-pdf", element: <><SeoManager toolName="Word to PDF" /><ConverterPage title="Word to PDF" description="Make DOCX files easy to read by converting to PDF." targetFormat="pdf" accept=".docx,.doc" /></> },
+{ path: "pdf-to-excel", element: <><SeoManager toolName="PDF to Excel" /><ConverterPage title="PDF to Excel" description="Extract data from PDF to Excel spreadsheets." targetFormat="xlsx" accept=".pdf" /></> },
+{ path: "excel-to-pdf", element: <><SeoManager toolName="Excel to PDF" /><ConverterPage title="Excel to PDF" description="Convert Excel spreadsheets to PDF format." targetFormat="pdf" accept=".xlsx,.xls" /></> },
+{ path: "pdf-to-powerpoint", element: <><SeoManager toolName="PDF to PowerPoint" /><ConverterPage title="PDF to PowerPoint" description="Convert PDF to editable PPTX slideshows." targetFormat="pptx" accept=".pdf" /></> },
+{ path: "powerpoint-to-pdf", element: <><SeoManager toolName="PowerPoint to PDF" /><ConverterPage title="PowerPoint to PDF" description="Convert PPTX slideshows to PDF." targetFormat="pdf" accept=".pptx,.ppt" /></> },
+
+
 
       // Video & Audio
       { path: "video-cutter", element: <><SeoManager toolName="Video Cutter" /><VideoCutter /></> },

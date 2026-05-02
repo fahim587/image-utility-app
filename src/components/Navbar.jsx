@@ -9,18 +9,19 @@ import {
     Braces, Palette, Volume2, FastForward, Type, Droplets, 
     Layers, ShieldCheck, Image, FlipHorizontal, Sparkles,
     Hash, CaseUpper, Link as LinkIcon, ScanBarcode, Eye, EyeOff, Search, Mail, Zap, Languages,
-    FileX, Unlock, PenTool, LayoutGrid, Tag, Globe, FileEdit, User,
+    FileX, Unlock, PenTool, LayoutGrid, Tag, Globe, FileEdit, User, FileSpreadsheet, Presentation,
 } from "lucide-react";
-
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openDropdown, setOpenDropdown] = useState(null);
+    const [mobileOpenDropdown, setMobileOpenDropdown] = useState(null); // মোবাইলের জন্য আলাদা স্টেট
     const [scrolled, setScrolled] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     
     const location = useLocation();
+    const navigate = useNavigate();
     const [prevPath, setPrevPath] = useState(location.pathname);
 
     useEffect(() => {
@@ -28,6 +29,7 @@ const Navbar = () => {
             setPrevPath(location.pathname);
             setIsMenuOpen(false);
             setOpenDropdown(null);
+            setMobileOpenDropdown(null);
             setIsSearchOpen(false);
             setSearchQuery("");
         }
@@ -36,6 +38,7 @@ const Navbar = () => {
     const closeAllMenus = useCallback(() => {
         setIsMenuOpen(false);
         setOpenDropdown(null);
+        setMobileOpenDropdown(null);
         setIsSearchOpen(false);
         setSearchQuery("");
     }, []);
@@ -45,8 +48,6 @@ const Navbar = () => {
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
-
-    const navigate = useNavigate();
 
     const toolCategories = useMemo(() => [
         {
@@ -104,7 +105,12 @@ const Navbar = () => {
                 { name: "Metadata Editor", path: "/metadata-editor", icon: <Tag size={14} /> },
                 { name: "HTML to PDF", path: "/html-to-pdf", icon: <Globe size={14} /> },
                 { name: "Edit PDF", path: "/edit-pdf", icon: <FileEdit size={14} /> },
-
+                { name: "PDF to Word", path: "/pdf-to-word", icon: <FileText size={14} /> },
+                { name: "Word to PDF", path: "/word-to-pdf", icon: <FileText size={14} /> },
+                { name: "PDF to Excel", path: "/pdf-to-excel", icon: <FileSpreadsheet size={14} /> },
+                { name: "Excel to PDF", path: "/excel-to-pdf", icon: <FileSpreadsheet size={14} /> },
+                { name: "PDF to PPT", path: "/pdf-to-powerpoint", icon: <Presentation size={14} /> },
+                { name: "PPT to PDF", path: "/powerpoint-to-pdf", icon: <Presentation size={14} /> },
             ]
         },
         {
@@ -146,7 +152,6 @@ const Navbar = () => {
                 { name: "Temp Email", path: "/temp-email", icon: <Mail size={14} /> },
                 { name: "Typing Test", path: "/typing-test", icon: <Zap size={14} /> },
                 { name: "Lorem Ipsum", path: "/lorem-ipsum", icon: <FileText size={14} /> },
-
             ]
         }
     ], []);
@@ -170,11 +175,16 @@ const Navbar = () => {
         return themes[color] || themes.blue;
     };
 
+    const toggleMobileDropdown = (id) => {
+        setMobileOpenDropdown(mobileOpenDropdown === id ? null : id);
+    };
+
     return (
         <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "pt-2" : "pt-4"}`}>
             <div className="max-w-7xl mx-auto px-4 md:px-6">
                 <nav className={`relative flex items-center justify-between px-6 h-16 rounded-3xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-2xl transition-all duration-500 ${scrolled ? "bg-white/80 shadow-lg" : "bg-white/50"}`}>
                     
+                    {/* Logo */}
                     <Link to="/" onClick={closeAllMenus} className="flex items-center gap-2.5 group shrink-0">
                         <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                             <img src="/vite.svg" alt="GOOGIZ Logo" className="w-full h-full object-contain" />
@@ -182,6 +192,7 @@ const Navbar = () => {
                         <span className="text-xl font-black text-[#010326] tracking-tight">GOOGIZ<span className="text-[#010326]">.</span></span>
                     </Link>
 
+                    {/* Desktop Menu */}
                     <div className="hidden lg:flex items-center gap-1 mx-4">
                         {toolCategories.map((category) => (
                             <div 
@@ -191,11 +202,9 @@ const Navbar = () => {
                                 onMouseLeave={() => setOpenDropdown(null)}
                             >
                                 <button className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-all duration-300 ${openDropdown === category.id ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
-                                    {(category.name)}
+                                    {category.name}
                                     {category.id === 'ai' && (
-                                        <span className="ml-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] font-black uppercase rounded-md animate-pulse">
-                                            New
-                                        </span>
+                                        <span className="ml-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] font-black uppercase rounded-md animate-pulse">New</span>
                                     )}
                                     <ChevronDown size={14} className={`transition-transform duration-300 ${openDropdown === category.id ? 'rotate-180' : ''}`} />
                                 </button>
@@ -224,7 +233,7 @@ const Navbar = () => {
                                                         <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:bg-white group-hover/item:shadow-sm transition-all shrink-0">
                                                             {item.icon}
                                                         </div>
-                                                        <span className="text-[12px] font-bold text-slate-700 leading-tight">{(item.name)}</span>
+                                                        <span className="text-[12px] font-bold text-slate-700 leading-tight">{item.name}</span>
                                                     </Link>
                                                 </motion.div>
                                             ))}
@@ -235,7 +244,9 @@ const Navbar = () => {
                         ))}
                     </div>
 
+                    {/* Right Side Icons & Actions */}
                     <div className="flex items-center gap-2 lg:gap-4">
+                        {/* Search Button */}
                         <div className="relative">
                             <button 
                                 onClick={() => setIsSearchOpen(!isSearchOpen)}
@@ -253,14 +264,13 @@ const Navbar = () => {
                                         className="absolute right-0 top-[120%] w-75 md:w-100 bg-white rounded-3xl shadow-2xl border border-slate-100 p-4"
                                     >
                                         <div className="relative flex items-center">
-                                            {/* Search Icon Container fixed at left */}
                                             <div className="absolute left-4 w-6 shrink-0 flex items-center justify-center pointer-events-none">
                                                 <Search className="text-slate-400" size={16} />
                                             </div>
                                             <input 
                                                 autoFocus
                                                 type="text"
-                                                placeholder={("Search tools...")}
+                                                placeholder="Search tools..."
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 className="w-full bg-slate-50 border-none rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 ring-blue-500/20"
@@ -280,11 +290,11 @@ const Navbar = () => {
                                                             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm border border-slate-100">
                                                                 {item.icon}
                                                             </div>
-                                                            <span className="text-sm font-bold text-slate-700">{(item.name)}</span>
+                                                            <span className="text-sm font-bold text-slate-700">{item.name}</span>
                                                         </Link>
                                                     ))
                                                 ) : (
-                                                    <div className="py-8 text-center text-slate-400 text-sm">{("No tools found")}</div>
+                                                    <div className="py-8 text-center text-slate-400 text-sm">No tools found</div>
                                                 )}
                                             </div>
                                         )}
@@ -292,19 +302,21 @@ const Navbar = () => {
                                 )}
                             </AnimatePresence>
                         </div>
+
                         <button 
                             onClick={() => navigate("/pricing")} 
-                            className="px-4 py-2 font-medium text-gray-700 hover:text-blue-600"
+                            className="hidden sm:block px-4 py-2 font-bold text-slate-600 hover:text-blue-600 text-[13px]"
                         >
                             Pricing
                         </button>
 
                         <div className="hidden lg:flex items-center gap-4">
-                            <Link to="/signup" className="bg-[#0583F2] text-white px-7 py-2.5 rounded-full text-sm font-bold hover:bg-[#010326] transition-all active:scale-95 shadow-none">
-                                {('Get Started')}
+                            <Link to="/signup" className="bg-[#0583F2] text-white px-7 py-2.5 rounded-full text-sm font-bold hover:bg-[#010326] transition-all active:scale-95">
+                                Get Started
                             </Link>
                         </div>
 
+                        {/* Mobile Toggle */}
                         <button className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-900 text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
                         </button>
@@ -312,35 +324,35 @@ const Navbar = () => {
                 </nav>
             </div>
 
+            {/* Mobile Sidebar Menu */}
             <AnimatePresence>
                 {isMenuOpen && (
                     <motion.div 
                         initial={{ opacity: 0, x: "100%" }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: "100%" }}
-                        className="fixed inset-0 bg-white z-[60] lg:hidden p-6 overflow-y-auto"
+                        className="fixed inset-0 bg-white z-[60] lg:hidden p-6 overflow-y-auto flex flex-col"
                     >
                         <div className="flex items-center justify-between mb-8">
                             <span className="text-xl font-black text-slate-900">Menu<span className="text-blue-600">.</span></span>
                             <button onClick={closeAllMenus} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center"><X size={20}/></button>
                         </div>
 
-                        <div className="mb-8 relative flex items-center">
-                            {/* Mobile Search Icon fixed at left */}
+                        {/* Mobile Search */}
+                        <div className="mb-6 relative flex items-center">
                             <div className="absolute left-4 w-8 shrink-0 flex items-center justify-center pointer-events-none">
                                 <Search className="text-slate-400" size={18} />
                             </div>
                             <input 
                                 type="text"
-                                placeholder={("Search tools...")}
+                                placeholder="Search tools..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-slate-100 border-none rounded-2xl py-4 pl-12 pr-4 text-sm focus:ring-2 ring-blue-500/20"
                             />
-                            
                             {searchQuery && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-10">
-                                    {filteredTools.slice(0, 5).map((item) => (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden z-10 max-h-60 overflow-y-auto">
+                                    {filteredTools.slice(0, 8).map((item) => (
                                         <Link 
                                             key={item.path}
                                             to={item.path}
@@ -348,41 +360,73 @@ const Navbar = () => {
                                             className="flex items-center gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-none"
                                         >
                                             <div className="text-blue-600">{item.icon}</div>
-                                            <span className="font-bold text-slate-800 text-sm">{(item.name)}</span>
+                                            <span className="font-bold text-slate-800 text-sm">{item.name}</span>
                                         </Link>
                                     ))}
                                 </div>
                             )}
                         </div>
                         
-                        {toolCategories.map((category) => (
-                            <div key={category.id} className="mb-8">
-                                <div className="flex items-center gap-2 mb-4 px-2">
-                                    <div className={`w-1 h-4 rounded-full ${category.accent}`}></div>
-                                    <span className="text-[10px] font-black uppercase tracking-[3px] text-slate-400">{(category.name)}</span>
+                        {/* Mobile Accordion Menu */}
+                        <div className="flex-1 space-y-2">
+                            {toolCategories.map((category) => (
+                                <div key={category.id} className="border-b border-slate-50 last:border-none overflow-hidden">
+                                    <button 
+                                        onClick={() => toggleMobileDropdown(category.id)}
+                                        className="w-full flex items-center justify-between py-4 px-2"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg bg-slate-50 ${category.colorClass === 'rose' ? 'text-rose-600' : category.colorClass === 'blue' ? 'text-blue-600' : category.colorClass === 'violet' ? 'text-violet-600' : category.colorClass === 'amber' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                {category.icon}
+                                            </div>
+                                            <span className="font-bold text-slate-800">{category.name}</span>
+                                        </div>
+                                        <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${mobileOpenDropdown === category.id ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    
+                                    <AnimatePresence>
+                                        {mobileOpenDropdown === category.id && (
+                                            <motion.div 
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="grid grid-cols-1 gap-1 pb-4 px-2"
+                                            >
+                                                {category.items.map((item) => (
+                                                    <Link 
+                                                        key={item.path} 
+                                                        to={item.path} 
+                                                        onClick={closeAllMenus}
+                                                        className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl active:bg-slate-100 transition-colors"
+                                                    >
+                                                        <div className="text-slate-400">{item.icon}</div>
+                                                        <span className="font-bold text-slate-700 text-sm">{item.name}</span>
+                                                    </Link>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {category.items.map((item) => (
-                                        <Link 
-                                            key={item.path} 
-                                            to={item.path} 
-                                            onClick={closeAllMenus}
-                                            className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl"
-                                        >
-                                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm">{item.icon}</div>
-                                            <span className="font-bold text-slate-800 text-sm">{(item.name)}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                         
-                        <div className="flex flex-col gap-4 mt-4 border-t pt-6">
-                             <Link to="/login" onClick={closeAllMenus} className="text-lg font-bold text-blue-600 flex items-center gap-2">
-                                <User size={20} /> Login / Sign Up
+                        {/* Mobile Footer Actions */}
+                        <div className="flex flex-col gap-4 mt-8 pt-6 border-t border-slate-100">
+                             <Link to="/signup" onClick={closeAllMenus} className="w-full bg-[#0583F2] text-white py-4 rounded-2xl text-center font-bold shadow-lg shadow-blue-100">
+                                Get Started Free
                              </Link>
-                             <Link to="/contact" className="text-lg font-bold text-slate-800">{('Contact')}</Link>
-                             <Link to="/privacy" className="text-lg font-bold text-slate-800">{('Privacy')}</Link>
+                             <div className="grid grid-cols-2 gap-3">
+                                <Link to="/login" onClick={closeAllMenus} className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 rounded-xl font-bold text-slate-700 text-sm border border-slate-100">
+                                    <User size={16} /> Login
+                                </Link>
+                                <Link to="/pricing" onClick={closeAllMenus} className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 rounded-xl font-bold text-slate-700 text-sm border border-slate-100">
+                                    Pricing
+                                </Link>
+                             </div>
+                             <div className="flex justify-center gap-6 mt-2">
+                                <Link to="/contact" className="text-xs font-bold text-slate-400 uppercase tracking-widest">Contact</Link>
+                                <Link to="/privacy" className="text-xs font-bold text-slate-400 uppercase tracking-widest">Privacy</Link>
+                             </div>
                         </div>
                     </motion.div>
                 )}

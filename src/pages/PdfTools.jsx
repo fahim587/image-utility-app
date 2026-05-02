@@ -3,10 +3,7 @@ import { motion } from "framer-motion";
 import { 
     Files, Scissors, Download, RotateCw, Image, 
     FileImage, ShieldCheck, Lock, FileText,Hash,
-    LayoutGrid,
-    Tag,
-    Globe,
-    FileEdit
+    LayoutGrid,Tag,Globe,FileEdit,FileX,Unlock,PenTool,FileSpreadsheet,Presentation
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -30,25 +27,31 @@ const ToolCard = ({ to, icon: ToolIcon, title, desc, color }) => (
 
 const PdfTools = () => {
     const tools = [
-    { to: "/merge-pdf", icon: Files, color: "bg-rose-500", title: "Merge PDF", desc: "Join documents in seconds." },
-    { to: "/split-pdf", icon: Scissors, color: "bg-rose-500", title: "Split PDF", desc: "Extract specific page ranges." },
-    { to: "/compress-pdf", icon: Download, color: "bg-rose-500", title: "Compress PDF", desc: "Reduce size while keeping text sharp." },
-    { to: "/rotate-pdf", icon: RotateCw, color: "bg-rose-500", title: "Rotate PDF", desc: "Fix orientation of scanned docs." },
-    { to: "/pdf-to-jpg", icon: Image, color: "bg-rose-500", title: "PDF to JPG", desc: "High-resolution page extraction." },
-    { to: "/jpg-to-pdf", icon: FileImage, color: "bg-rose-500", title: "JPG to PDF", desc: "Standardized document creation." },
-    { to: "/watermark-pdf", icon: ShieldCheck, color: "bg-rose-500", title: "PDF Watermark", desc: "Stamps for official documentation." },
-    { to: "/protect-pdf", icon: Lock, color: "bg-rose-500", title: "Protect PDF", desc: "AES-256 password encryption." },
-    // নিচের লাইনগুলো আমি ফিক্স করে দিয়েছি
-    { to: "/add-page-numbers", icon: Hash, color: "bg-rose-500", title: "Add Page Numbers", desc:"Add page numbers to your PDF documents easily."},
-    { to: "/remove-pdf-pages", icon: FileText, color: "bg-rose-500", title: "Remove PDF Pages", desc:"Remove pages to your PDF documents easily."},
-    { to: "/unlock-pdf", icon: Lock, color: "bg-rose-500", title: "Unlock PDF", desc:"Remove password protection from PDFs."},
-    { to: "/sign-pdf", icon: FileText, color: "bg-rose-500", title: "Sign PDF", desc:"Add digital signatures to your PDF documents."},
-    { to: "/organized-pdf", icon: LayoutGrid, color: "bg-rose-500", title: "Organize PDF", desc:"Rearrange pages in your PDF documents easily."},
-    { to: "/metadata-editor", icon: Tag, color: "bg-rose-500", title: "Metadata Editor", desc:"Edit metadata in your PDF documents easily."},
-    { to: "/html-to-pdf", icon: Globe, color: "bg-rose-500", title: "HTML to PDF", desc:"Convert web pages to PDF format easily."},
-    { to: "/edit-pdf", icon: FileEdit, color: "bg-rose-500", title: "Edit PDF", desc:"Modify existing PDF documents easily."},
-];
+    { path: "/merge-pdf", icon: Files, color: "bg-rose-500", title: "Merge PDF", desc: "Join documents in seconds." },
+    { path: "/split-pdf", icon: Scissors, color: "bg-rose-500", title: "Split PDF", desc: "Extract specific page ranges." },
+    { path: "/compress-pdf", icon: Download, color: "bg-rose-500", title: "Compress PDF", desc: "Reduce size while keeping text sharp." },
+    { path: "/rotate-pdf", icon: RotateCw, color: "bg-rose-500", title: "Rotate PDF", desc: "Fix orientation of scanned docs." },
+    { path: "/pdf-to-jpg", icon: Image, color: "bg-rose-500", title: "PDF to JPG", desc: "High-resolution page extraction." },
+    { path: "/jpg-to-pdf", icon: FileImage, color: "bg-rose-500", title: "JPG to PDF", desc: "Standardized document creation." },
+    { path: "/watermark-pdf", icon: ShieldCheck, color: "bg-rose-500", title: "PDF Watermark", desc: "Stamps for official documentation." },
+    { path: "/protect-pdf", icon: Lock, color: "bg-rose-500", title: "Protect PDF", desc: "AES-256 password encryption." },
+    { path: "/add-page-numbers", icon: Hash, color: "bg-rose-500", title: "Add Page Numbers", desc:"Add page numbers to your PDF documents easily."},
+    { path: "/remove-pdf-pages", icon: FileX, color: "bg-rose-500", title: "Remove PDF Pages", desc:"Remove pages from your PDF documents easily."},
+    { path: "/unlock-pdf", icon: Unlock, color: "bg-rose-500", title: "Unlock PDF", desc:"Remove password protection from PDFs."},
+    { path: "/sign-pdf", icon: PenTool, color: "bg-rose-500", title: "Sign PDF", desc:"Add digital signatures to your PDF documents."},
+    { path: "/organized-pdf", icon: LayoutGrid, color: "bg-rose-500", title: "Organize PDF", desc:"Rearrange pages in your PDF documents easily."},
+    { path: "/metadata-editor", icon: Tag, color: "bg-rose-500", title: "Metadata Editor", desc:"Edit metadata in your PDF documents easily."},
+    { path: "/html-to-pdf", icon: Globe, color: "bg-rose-500", title: "HTML to PDF", desc:"Convert web pages to PDF format easily."},
+    { path: "/edit-pdf", icon: FileEdit, color: "bg-rose-500", title: "Edit PDF", desc:"Modify existing PDF documents easily."},
 
+    // নতুন কনভার্সন টুলস (যা আপনি App.jsx-এ রাউট হিসেবে দিয়েছেন)
+    { path: "/pdf-to-word", icon: FileText, color: "bg-rose-500", title: "PDF to Word", desc: "Convert PDF documents to editable Word format." },
+    { path: "/word-to-pdf", icon: FileText, color: "bg-rose-500", title: "Word to PDF", desc: "Convert Word documents to professional PDF format." },
+    { path: "/pdf-to-excel", icon: FileSpreadsheet, color: "bg-rose-500", title: "PDF to Excel", desc: "Extract data from PDF to Excel spreadsheets." },
+    { path: "/excel-to-pdf", icon: FileSpreadsheet, color: "bg-rose-500", title: "Excel to PDF", desc: "Convert Excel spreadsheets to PDF format." },
+    { path: "/pdf-to-powerpoint", icon: Presentation, color: "bg-rose-500", title: "PDF to PPT", desc: "Convert PDF to editable PowerPoint slideshows." },
+    { path: "/powerpoint-to-pdf", icon: Presentation, color: "bg-rose-500", title: "PPT to PDF", desc: "Convert PowerPoint slideshows to PDF format." },
+];
     return (
         <div className="min-h-screen bg-[#F8FAFC] pt-32 pb-20 px-6">
             <div className="max-w-7xl mx-auto">
