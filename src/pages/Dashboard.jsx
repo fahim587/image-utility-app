@@ -21,9 +21,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // মোবাইল মেনুর জন্য স্টেট
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const isPro = user?.plan === "pro" || user?.plan === "lifetime" || user?.isPro;
+  // User details check safely
+  const isPro = user?.plan === "pro" || user?.plan === "lifetime" || user?.isPro === true;
 
   const colors = {
     primary: '#0583F2',
@@ -40,8 +41,10 @@ export default function Dashboard() {
 
     const fetchProfile = async () => {
       try {
+        // API URL logic fixed for production/development
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
         const res = await axios.get(
-          `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/profile`,
+          `${apiUrl}/api/auth/profile`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setUser(res.data);
@@ -70,7 +73,7 @@ export default function Dashboard() {
     } else {
       navigate(toolPath);
     }
-    setIsSidebarOpen(false); // মোবাইল মেনু বন্ধ করা
+    setIsSidebarOpen(false);
   };
 
   if (loading) return (
@@ -103,7 +106,6 @@ export default function Dashboard() {
             </div>
             <span className="text-xl font-black tracking-tight" style={{ color: colors.dark }}>GOOGIZ</span>
           </div>
-          {/* Close button for mobile */}
           <button className="lg:hidden p-1 text-gray-500" onClick={() => setIsSidebarOpen(false)}>
             <X size={24} />
           </button>
@@ -119,7 +121,6 @@ export default function Dashboard() {
           <NavItem icon={<Wrench size={20} />} label="Utility" colors={colors} onClick={() => handleToolClick("/utility-tools", false)} />
         </nav>
         
-        {/* Mobile Logout (Sidebar এর নিচে) */}
         <button 
           onClick={logout}
           className="mt-4 lg:hidden flex items-center gap-3 p-3 rounded-xl text-red-500 font-bold hover:bg-red-50"
@@ -130,7 +131,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="flex-1 w-full overflow-x-hidden min-h-screen">
-        {/* Mobile Header / Top Bar */}
         <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b sticky top-0 z-30">
           <div className="flex items-center gap-2">
              <div className="p-1.5 rounded-md" style={{ backgroundColor: colors.primary }}>
@@ -161,7 +161,6 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Account Info Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-10">
             <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
               <h3 className="text-lg font-bold mb-4" style={{ color: colors.dark }}>Account Status</h3>
@@ -196,7 +195,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Main Tool Grid */}
           <h3 className="text-xl md:text-2xl font-bold mb-6" style={{ color: colors.dark }}>Available Services</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <ToolCard icon={<Wand2 className="text-purple-500" />} title="AI Magic" desc="Explore all AI power tools in one place" isPremium={!isPro} colors={colors} onClick={() => handleToolClick("/ai-tools", true)} />
@@ -212,7 +210,6 @@ export default function Dashboard() {
   );
 }
 
-// Sidebar Item Component
 function NavItem({ icon, label, active, colors, isPremium, onClick }) {
   return (
     <div 
@@ -231,7 +228,6 @@ function NavItem({ icon, label, active, colors, isPremium, onClick }) {
   );
 }
 
-// Tool Card Component
 function ToolCard({ icon, title, desc, isPremium, onClick, colors }) {
   return (
     <div 

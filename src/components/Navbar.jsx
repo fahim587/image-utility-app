@@ -413,7 +413,7 @@ const Navbar = () => {
                         {/* Mobile Footer Actions */}
                         <div className="flex flex-col gap-4 mt-8 pt-6 border-t border-slate-100">
                              <Link to="/signup" onClick={closeAllMenus} className="w-full bg-[#0583F2] text-white py-4 rounded-2xl text-center font-bold shadow-lg shadow-blue-100">
-                                Get Started Free
+                                Get Started 
                              </Link>
                              <div className="grid grid-cols-2 gap-3">
                                 <Link to="/login" onClick={closeAllMenus} className="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 rounded-xl font-bold text-slate-700 text-sm border border-slate-100">
