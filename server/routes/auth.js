@@ -6,47 +6,22 @@ import sendEmail from "../utils/sendEmail.js";
 
 const router = express.Router();
 
-/* ================= TOKEN ================= */
+// =============================
+// TOKEN GENERATOR
+// =============================
 const generateToken = (id) => {
-  return jwt.sign(
-    { id },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-/* ================= AUTH MIDDLEWARE ================= */
-const authMiddleware = (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    req.userId = decoded.id;
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid token" });
-  }
-};
-
-/* ================= SIGNUP ================= */
+// =============================
+// SIGNUP
+// =============================
 router.post("/signup", async (req, res) => {
   try {
-    let { name, email, password } = req.body;
-
-    email = email?.toLowerCase().trim();
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields required" });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password too short" });
     }
 
     const existing = await User.findOne({ email });
@@ -58,40 +33,49 @@ router.post("/signup", async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name: name.trim(),
+      name,
       email,
       password: hashed,
+
+      // default values (match schema)
       plan: "free",
       isPro: false,
+      subscriptionType: "free",
+
       usageCount: 0,
       usageLimit: 5,
     });
 
     const token = generateToken(user._id);
 
-    res.status(201).json({
-      success: true,
+    return res.status(201).json({
       token,
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        isPro: user.isPro,
+        usageCount: user.usageCount,
+        usageLimit: user.usageLimit,
+      },
     });
 
   } catch (err) {
     console.error("Signup Error:", err);
-    res.status(500).json({ message: "Signup failed" });
+    return res.status(500).json({ message: "Signup failed" });
   }
 });
 
-/* ================= LOGIN ================= */
+// =============================
+// LOGIN
+// =============================
 router.post("/login", async (req, res) => {
   try {
-    let { email, password } = req.body;
-
-    console.log("LOGIN BODY:", req.body); // DEBUG
-
-    email = email?.toLowerCase().trim();
+    const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Missing credentials" });
+      return res.status(400).json({ message: "Email and password required" });
     }
 
     const user = await User.findOne({ email });
@@ -108,50 +92,64 @@ router.post("/login", async (req, res) => {
 
     const token = generateToken(user._id);
 
-    res.json({
-      success: true,
+    return res.json({
       token,
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        isPro: user.isPro,
+        usageCount: user.usageCount,
+        usageLimit: user.usageLimit,
+      },
     });
 
   } catch (err) {
     console.error("Login Error:", err);
-    res.status(500).json({ message: "Login failed" });
+    return res.status(500).json({ message: "Login failed" });
   }
 });
 
-/* ================= PROFILE (FIXED 404 ISSUE) ================= */
-router.get("/profile", authMiddleware, async (req, res) => {
+// =============================
+// PROFILE
+// =============================
+router.get("/profile", async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("-password");
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({
-      success: true,
-      user,
-    });
+    return res.json(user);
 
   } catch (err) {
-    res.status(500).json({ message: "Profile error" });
+    return res.status(401).json({ message: "Invalid token" });
   }
 });
 
-/* ================= FORGOT PASSWORD ================= */
+// =============================
+// FORGOT PASSWORD
+// =============================
 router.post("/forgot-password", async (req, res) => {
   try {
-    const email = req.body.email?.toLowerCase().trim();
-
-    if (!email) {
-      return res.status(400).json({ message: "Email required" });
-    }
+    const { email } = req.body;
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.json({ message: "If email exists, reset link sent" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const token = jwt.sign(
@@ -160,32 +158,32 @@ router.post("/forgot-password", async (req, res) => {
       { expiresIn: "10m" }
     );
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    const resetLink =
+      `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${token}`;
 
     await sendEmail({
       email: user.email,
-      subject: "Password Reset",
+      subject: "Password Reset Request",
       url: resetLink,
     });
 
-    res.json({ message: "If email exists, reset link sent" });
+    return res.json({ message: "Password reset link sent" });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error sending reset link" });
+    console.error("Forgot Password Error:", err);
+    return res.status(500).json({ message: "Error sending reset link" });
   }
 });
 
-/* ================= RESET PASSWORD ================= */
+// =============================
+// RESET PASSWORD
+// =============================
 router.post("/reset-password/:token", async (req, res) => {
   try {
+    const { token } = req.params;
     const { password } = req.body;
 
-    if (!password || password.length < 6) {
-      return res.status(400).json({ message: "Password too short" });
-    }
-
-    const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const hashed = await bcrypt.hash(password, 10);
 
@@ -199,11 +197,12 @@ router.post("/reset-password/:token", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ message: "Password updated successfully" });
+    return res.json({ message: "Password updated successfully" });
 
   } catch (err) {
-    res.status(400).json({ message: "Invalid or expired token" });
+    return res.status(400).json({ message: "Invalid or expired token" });
   }
 });
 
 export default router;
+
