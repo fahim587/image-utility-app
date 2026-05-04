@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FilePlus, Trash2, Loader2, RotateCw, RotateCcw, FileDown, ChevronDown, RefreshCcw } from "lucide-react";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib"; // degrees ইম্পোর্ট করা হয়েছে
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 import workerSrc from "pdfjs-dist/build/pdf.worker?url";
 import RelatedTools from '../../components/RelatedTools';
@@ -76,10 +76,13 @@ const RotatePdf = () => {
     try {
       const bytes = await file.arrayBuffer();
       const pdfDoc = await PDFDocument.load(bytes);
+      
       pages.forEach((p) => {
         const page = pdfDoc.getPage(p.index);
-        page.setRotation((p.rotation * Math.PI) / 180);
+        // FIXED: Using degrees() function to ensure pdf-lib understands the input
+        page.setRotation(degrees(p.rotation)); 
       });
+
       const rotatedBytes = await pdfDoc.save();
       const blob = new Blob([rotatedBytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -93,7 +96,6 @@ const RotatePdf = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-4">
       <div className="max-w-5xl mx-auto">
-        {/* SEO-Friendly Title */}
         <h1 className="text-4xl font-bold text-center  text-rose-500 mb-10">
           Rotate PDF Online  
         </h1>
@@ -101,7 +103,6 @@ const RotatePdf = () => {
           Rotate, Reset & Download Pages
         </h2>
 
-        {/* Upload */}
         {!file && (
           <label className="border-2 border-dashed p-16 rounded-xl bg-white text-center cursor-pointer block mb-10 hover:border-red-500 transition-all shadow-sm">
             <FilePlus className="mx-auto mb-4 text-red-500" size={48} />
@@ -115,7 +116,6 @@ const RotatePdf = () => {
           </label>
         )}
 
-        {/* Page Actions */}
         {pages.length > 0 && (
           <div className="flex gap-4 mb-6 justify-center flex-wrap">
             <button
@@ -139,7 +139,6 @@ const RotatePdf = () => {
           </div>
         )}
 
-        {/* Page Previews */}
         {pages.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
             {pages.map((p, i) => (
@@ -169,7 +168,6 @@ const RotatePdf = () => {
           </div>
         )}
 
-        {/* Apply Rotation */}
         {pages.length > 0 && (
           <button
             onClick={applyRotation}
@@ -180,18 +178,16 @@ const RotatePdf = () => {
           </button>
         )}
 
-        {/* Download Link */}
         {rotatedUrl && (
           <a
             href={rotatedUrl}
             download={`rotated_${file.name}`}
-            className="block text-center text-green-600 font-semibold hover:underline mb-6"
+            className="block text-center text-green-600 font-semibold hover:underline mb-6 flex items-center justify-center gap-2"
           >
             <FileDown size={20} /> Download Rotated PDF
           </a>
         )}
 
-        {/* How to use */}
         <div className="mt-6">
           <button
             onClick={() => setShowGuide(!showGuide)}
@@ -210,7 +206,7 @@ const RotatePdf = () => {
             </div>
           )}
         </div>
-         <RelatedTools categoryId='pdf' />
+        <RelatedTools categoryId='pdf' />
       </div>
     </div>
   );
