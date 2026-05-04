@@ -187,7 +187,7 @@ const Navbar = () => {
                     {/* Logo */}
                     <Link to="/" onClick={closeAllMenus} className="flex items-center gap-2.5 group shrink-0">
                         <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <img src="/vite.svg" alt="GOOGIZ Logo" className="w-full h-full object-contain" />
+                            <img src="/logo.svg" alt="GOOGIZ Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-xl font-black text-[#010326] tracking-tight">GOOGIZ<span className="text-[#010326]">.</span></span>
                     </Link>
