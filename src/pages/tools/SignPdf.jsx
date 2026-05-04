@@ -5,7 +5,7 @@ import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.min?url";
 import SignaturePad from "signature_pad";
 import Draggable from "react-draggable";
 import { PDFDocument } from "pdf-lib";
-import { UploadCloud, Download, ChevronLeft, ChevronRight, Type, PenTool, Image as ImageIcon, Trash2, Bold, CaseSensitive, HelpCircle, ChevronDown } from "lucide-react";
+import { UploadCloud, Download, ChevronLeft, ChevronRight, Type, PenTool, Image as ImageIcon, Trash2, Bold, CaseSensitive, HelpCircle, ChevronDown, X } from "lucide-react";
 import RelatedTools from "../../components/RelatedTools";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -33,8 +33,9 @@ const SignPdf = () => {
   const [textTransform, setTextTransform] = useState("none");
   const [thumbnails, setThumbnails] = useState([]);
   const [showHowTo, setShowHowTo] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  // ১. ড্রয়িং সিগনেচার প্যাড ফিক্স
+  // ১. ড্রয়িং সিগনেচার প্যাড ফিক্স
   useEffect(() => {
     let pad = null;
     if (mode === "draw" && drawCanvas.current) {
@@ -52,17 +53,9 @@ const SignPdf = () => {
         maxWidth: 3.5,
       });
 
-      // সেফটি চেকসহ ইভেন্ট লিসেনার
-      if (typeof pad.addEventListener === "function") {
-        pad.addEventListener("endStroke", () => {
-          setSignature(pad.toDataURL("image/png"));
-        });
-      } else {
-        // যদি addEventListener না থাকে (ভার্সন ভেদে), তবে onEnd মেথড ব্যবহার করা হয়
-        pad.onEnd = () => {
-          setSignature(pad.toDataURL("image/png"));
-        };
-      }
+      pad.onEnd = () => {
+        setSignature(pad.toDataURL("image/png"));
+      };
 
       sigPadRef.current = pad;
     }
@@ -91,13 +84,10 @@ const SignPdf = () => {
     setSignature(canvas.toDataURL("image/png"));
   }, [typeText, textTransform, isBold, selectedFont, sigColor]);
 
-  // ৩. কালার বা মোড চেঞ্জ হলে সিগনেচার আপডেট
+  // ৩. সিগনেচার আপডেট লজিক
   useEffect(() => {
     if (mode === "draw" && sigPadRef.current) {
       sigPadRef.current.penColor = sigColor;
-      if (!sigPadRef.current.isEmpty()) {
-        setSignature(sigPadRef.current.toDataURL());
-      }
     } else if (mode === "type") {
       generateTypedSignature();
     }
@@ -145,14 +135,27 @@ const SignPdf = () => {
     setThumbnails(thumbArr);
   };
 
+  // ৪. ফিক্সড ডাউনলোড ফাংশন (ইমেজ ফরম্যাট হ্যান্ডলিং সহ)
   const downloadSignedPdf = async () => {
     if (!file || !signature) return;
+    setIsDownloading(true);
     try {
       const pdfBytes = await file.arrayBuffer();
       const doc = await PDFDocument.load(pdfBytes);
       const pages = doc.getPages();
       const currentPage = pages[page - 1];
-      const img = await doc.embedPng(signature);
+
+      // ইমেজ ফরম্যাট চেক এবং এমবেড
+      let img;
+      if (signature.startsWith('data:image/png')) {
+        img = await doc.embedPng(signature);
+      } else if (signature.startsWith('data:image/jpeg') || signature.startsWith('data:image/jpg')) {
+        img = await doc.embedJpg(signature);
+      } else {
+        // যদি অন্য কোনো ফরম্যাট হয় (যেমন SVG), PNG হিসেবে ট্রাই করবে
+        img = await doc.embedPng(signature);
+      }
+
       const { width: pdfWidth, height: pdfHeight } = currentPage.getSize();
       const rect = pdfCanvas.current.getBoundingClientRect();
       const scaleX = pdfWidth / rect.width;
@@ -169,9 +172,28 @@ const SignPdf = () => {
       const blob = new Blob([newPdf], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `Signed_Document.pdf`; a.click();
+      a.href = url;
+      a.download = `Signed_${file.name}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(err);
+      console.error("PDF Save Error:", err);
+      alert("Error saving PDF. Please try again with a PNG or JPG signature.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleSignatureUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setSignature(event.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -184,6 +206,7 @@ const SignPdf = () => {
       </Helmet>
 
       <div className="max-w-[1600px] mx-auto">
+        {/* Help Header */}
         <div className="mb-8 text-center">
             <button 
                 onClick={() => setShowHowTo(!showHowTo)}
@@ -218,7 +241,7 @@ const SignPdf = () => {
             <p className="text-slate-500 font-medium">Click to upload or drag and drop your file here</p>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-[240px_1fr_400px] gap-8 h-[82vh]">
+          <div className="grid lg:grid-cols-[240px_1fr_400px] gap-8 h-[85vh]">
             {/* Pages Sidebar */}
             <div className="bg-white rounded-3xl p-5 border border-slate-200 overflow-y-auto custom-scrollbar shadow-sm">
               <h3 className="text-[11px] font-bold uppercase text-slate-400 mb-6 tracking-[0.2em] text-center border-b pb-2">Document Pages</h3>
@@ -233,9 +256,9 @@ const SignPdf = () => {
             {/* Main Editor */}
             <div className="bg-slate-200/50 rounded-3xl overflow-auto relative flex flex-col items-center p-8 custom-scrollbar border border-slate-200/60">
               <div className="sticky top-0 z-20 mb-6 bg-white/80 backdrop-blur-md px-8 py-3 rounded-2xl shadow-lg flex items-center gap-6 font-bold text-slate-800">
-                <button className="hover:text-rose-600 transition-colors" onClick={() => page > 1 && (setPage(page-1), renderPage(pdf, page-1))}><ChevronLeft size={24}/></button>
+                <button className="hover:text-rose-600 transition-colors disabled:opacity-30" disabled={page === 1} onClick={() => { setPage(page-1); renderPage(pdf, page-1); }}><ChevronLeft size={24}/></button>
                 <span className="text-sm font-black tracking-widest tabular-nums">{page} / {totalPages}</span>
-                <button className="hover:text-rose-600 transition-colors" onClick={() => page < totalPages && (setPage(page+1), renderPage(pdf, page+1))}><ChevronRight size={24}/></button>
+                <button className="hover:text-rose-600 transition-colors disabled:opacity-30" disabled={page === totalPages} onClick={() => { setPage(page+1); renderPage(pdf, page+1); }}><ChevronRight size={24}/></button>
               </div>
               
               <div className="relative shadow-[0_20px_50px_rgba(0,0,0,0.1)] bg-white mx-auto">
@@ -244,7 +267,10 @@ const SignPdf = () => {
                   <Draggable nodeRef={nodeRef} bounds="parent" position={sigPosition} onStop={(e, data) => setSigPosition({ x: data.x, y: data.y })}>
                     <div ref={nodeRef} className="absolute z-40 cursor-grab active:cursor-grabbing top-0 left-0 group">
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-[10px] text-white px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap shadow-xl">Drag to place</div>
-                      <img src={signature} style={{ width: sigSize.w, height: sigSize.h }} className="border-2 border-dashed border-rose-500/50 bg-transparent transition-colors hover:border-rose-500" alt="Signature preview" />
+                      <div className="relative">
+                         <img src={signature} style={{ width: sigSize.w, height: sigSize.h }} className="border-2 border-dashed border-rose-500 bg-transparent" alt="Signature preview" />
+                         <button onClick={() => setSignature(null)} className="absolute -top-2 -right-2 bg-rose-600 text-white p-1 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><X size={12}/></button>
+                      </div>
                     </div>
                   </Draggable>
                 )}
@@ -279,7 +305,7 @@ const SignPdf = () => {
 
                 {mode === "type" && (
                   <div className="space-y-5">
-                    <input value={typeText} onChange={e => setTypeText(e.target.value)} className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-rose-50 transition-all font-medium" placeholder="Type your name..." />
+                    <input value={typeText} onChange={e => setTypeText(e.target.value)} className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-rose-50 transition-all font-medium text-center" placeholder="Type your name..." />
                     <div className="flex gap-3">
                       <button onClick={() => setIsBold(!isBold)} className={`flex-1 py-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 text-xs font-black ${isBold ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'border-slate-100 text-slate-400 hover:border-slate-200'}`}><Bold size={16}/> BOLD</button>
                       <button onClick={() => setTextTransform(textTransform === 'uppercase' ? 'none' : 'uppercase')} className={`flex-1 py-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 text-xs font-black ${textTransform === 'uppercase' ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'border-slate-100 text-slate-400 hover:border-slate-200'}`}><CaseSensitive size={18}/> ALL CAPS</button>
@@ -294,9 +320,9 @@ const SignPdf = () => {
 
                 {mode === "upload" && (
                   <div onClick={() => uploadSigRef.current.click()} className="border-3 border-dashed border-slate-200 p-12 rounded-2xl text-center cursor-pointer hover:border-rose-400 hover:bg-rose-50/30 transition-all group">
-                    <input type="file" accept="image/*" ref={uploadSigRef} className="hidden" onChange={(e) => { const r = new FileReader(); r.onload = () => setSignature(r.result); r.readAsDataURL(e.target.files[0]); }} />
+                    <input type="file" accept="image/png, image/jpeg" ref={uploadSigRef} className="hidden" onChange={handleSignatureUpload} />
                     <ImageIcon className="text-slate-400 mx-auto mb-4 group-hover:text-rose-500" size={28} />
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Choose Image</p>
+                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Choose PNG/JPG</p>
                   </div>
                 )}
               </div>
@@ -305,10 +331,21 @@ const SignPdf = () => {
                 <div className="mt-auto pt-8 border-t border-slate-100 space-y-6">
                   <div>
                     <div className="flex justify-between text-[11px] font-black text-slate-400 mb-3 uppercase tracking-widest"><span>Signature Scale</span><span className="text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">{sigSize.w}px</span></div>
-                    <input type="range" min="40" max="600" value={sigSize.w} onChange={e => setSigSize({ w: parseInt(e.target.value), h: parseInt(e.target.value)/2.5 })} className="w-full accent-rose-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" />
+                    <input type="range" min="40" max="600" value={sigSize.w} onChange={e => {
+                        const newW = parseInt(e.target.value);
+                        setSigSize({ w: newW, h: newW / 2.5 });
+                    }} className="w-full accent-rose-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" />
                   </div>
-                  <button onClick={downloadSignedPdf} className="w-full py-5 bg-rose-600 text-white rounded-[1.25rem] font-black uppercase text-xs tracking-[0.15em] shadow-xl shadow-rose-200 flex items-center justify-center gap-3 hover:bg-rose-700 hover:-translate-y-1 transition-all active:scale-[0.97] group">
-                    <Download size={20} className="group-hover:bounce" /> Finish & Download PDF
+                  <button 
+                    disabled={isDownloading} 
+                    onClick={downloadSignedPdf} 
+                    className="w-full py-5 bg-rose-600 text-white rounded-[1.25rem] font-black uppercase text-xs tracking-[0.15em] shadow-xl shadow-rose-200 flex items-center justify-center gap-3 hover:bg-rose-700 hover:-translate-y-1 transition-all active:scale-[0.97] group disabled:bg-slate-400 disabled:shadow-none disabled:translate-y-0"
+                  >
+                    {isDownloading ? (
+                        <>Processing...</>
+                    ) : (
+                        <><Download size={20} className="group-hover:bounce" /> Finish & Download PDF</>
+                    )}
                   </button>
                 </div>
               )}

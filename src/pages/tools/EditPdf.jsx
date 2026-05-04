@@ -1,246 +1,486 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useReducer, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import * as pdfjsLib from "pdfjs-dist";
-import { PDFDocument, rgb } from "pdf-lib";
-import Draggable from "react-draggable";
-import SignatureCanvas from "react-signature-canvas";
-import { 
-  Type, Image as ImageIcon, PenTool, Eraser, 
-  Square, Download, UploadCloud, X, Undo, Trash2 
+import { Rnd } from "react-rnd";
+import { motion, AnimatePresence } from "framer-motion";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+import {
+  Type,
+  Highlighter,
+  Image as ImageIcon,
+  Download,
+  Plus,
+  Minus,
+  UploadCloud,
+  Trash2,
+  Undo2,
+  Redo2,
+  MousePointer2,
+  Loader2,
+  X,
+  Settings2,
+  ChevronLeft,
+  ChevronRight,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
 } from "lucide-react";
 
-// Worker setup for PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+// PDF.js Worker Configuration
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+// Google Fonts CSS Import
+const fontLink = document.createElement("link");
+fontLink.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&display=swap";
+fontLink.rel = "stylesheet";
+document.head.appendChild(fontLink);
+
+const historyReducer = (state, action) => {
+  switch (action.type) {
+    case "SET_ELEMENTS":
+      return {
+        past: [...state.past.slice(-20), state.present],
+        present: action.payload,
+        future: [],
+      };
+    case "UNDO":
+      if (state.past.length === 0) return state;
+      return {
+        past: state.past.slice(0, -1),
+        present: state.past[state.past.length - 1],
+        future: [state.present, ...state.future],
+      };
+    case "REDO":
+      if (state.future.length === 0) return state;
+      return {
+        past: [...state.past, state.present],
+        present: state.future[0],
+        future: state.future.slice(1),
+      };
+    default:
+      return state;
+  }
+};
 
 const PdfEditor = () => {
   const [file, setFile] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [elements, setElements] = useState([]);
-  const [activeTool, setActiveTool] = useState("text");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showSignModal, setShowSignModal] = useState(false);
+  const [pdfPages, setPdfPages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [scale, setScale] = useState(1.0);
+  const [activeTool, setActiveTool] = useState("select");
+  const [activeId, setActiveId] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const [history, dispatch] = useReducer(historyReducer, {
+    past: [],
+    present: [],
+    future: [],
+  });
 
-  const fileInput = useRef(null);
-  const imageInput = useRef(null);
-  const sigCanvas = useRef(null);
-  const containerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const canvasRef = useRef(null);
 
-  // 1. Handle PDF Upload & Render Preview
-  const handleUpload = async (e) => {
-    const selected = e.target.files[0];
-    if (selected?.type === "application/pdf") {
-      setFile(selected);
-      const buffer = await selected.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 1.5 });
+  const handleFileUpload = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile || selectedFile.type !== "application/pdf") return;
 
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+    setIsLoading(true);
+    setFile(selectedFile);
 
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      setPreviewImage(canvas.toDataURL());
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const renderedPages = [];
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2.5 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({ canvasContext: context, viewport }).promise;
+        renderedPages.push({
+          url: canvas.toDataURL("image/jpeg", 0.95),
+          width: viewport.width / 2.5,
+          height: viewport.height / 2.5,
+        });
+      }
+      setPdfPages(renderedPages);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error("Rendering Error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // 2. Add New Element (Text, Shape, etc.)
-  const addElement = (e) => {
-    if (!previewImage || activeTool === "sign" || activeTool === "image") return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+  const addElement = (type, customData = {}) => {
+    if (!file) return;
     const newEl = {
       id: Date.now(),
-      type: activeTool,
-      x: x - 50,
-      y: y - 10,
-      content: activeTool === "text" ? "Type here..." : "",
+      type,
+      x: 100,
+      y: 100,
+      width: type === "text" ? "auto" : 150,
+      height: "auto",
+      content: customData.content || (type === "text" ? "এখনে লিখুন" : ""),
+      color: "#000000",
+      fontSize: 18,
+      fontWeight: "500",
+      fontFamily: "'Inter', sans-serif",
+      opacity: 1,
+      textAlign: "left",
+      pageIndex: currentPage - 1,
+      ...customData
     };
-
-    setElements([...elements, newEl]);
+    dispatch({ type: "SET_ELEMENTS", payload: [...history.present, newEl] });
+    setActiveId(newEl.id);
   };
 
-  // 3. Handle Image Upload
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (r) => {
-      setElements([...elements, { id: Date.now(), type: "image", x: 100, y: 100, content: r.target.result }]);
-    };
-    reader.readAsDataURL(file);
+  const updateElement = (id, updates) => {
+    const updated = history.present.map(el => el.id === id ? { ...el, ...updates } : el);
+    dispatch({ type: "SET_ELEMENTS", payload: updated });
   };
 
-  // 4. Save & Download PDF
-  const savePdf = async () => {
-    if (!file) return;
-    setIsProcessing(true);
+  const downloadPdf = async () => {
+    if (!canvasRef.current) return;
+    setIsExporting(true);
+    setActiveId(null); // Hide UI handles before export
+
     try {
-      const buffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(buffer);
-      const page = pdfDoc.getPages()[0];
-      const { width, height } = page.getSize();
+      const doc = new jsPDF({
+        orientation: pdfPages[0].width > pdfPages[0].height ? "l" : "p",
+        unit: "px",
+        format: [pdfPages[0].width, pdfPages[0].height]
+      });
 
-      const displayWidth = 650; 
-      const displayHeight = 850;
+      for (let i = 0; i < pdfPages.length; i++) {
+        if (i > 0) doc.addPage([pdfPages[i].width, pdfPages[i].height]);
+        
+        setCurrentPage(i + 1);
+        // Wait for state update and re-render
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      for (const el of elements) {
-        const pdfX = (el.x / displayWidth) * width;
-        const pdfY = height - (el.y / displayHeight) * height - 20;
+        const canvas = await html2canvas(canvasRef.current, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: null
+        });
 
-        if (el.type === "text") {
-          page.drawText(el.content, { x: pdfX, y: pdfY, size: 14, color: rgb(0, 0, 0) });
-        } else if (el.type === "image" || el.type === "sign") {
-          const img = el.content.includes("png") ? await pdfDoc.embedPng(el.content) : await pdfDoc.embedJpg(el.content);
-          page.drawImage(img, { x: pdfX, y: pdfY - 40, width: 120, height: 60 });
-        } else if (el.type === "whiteout") {
-          page.drawRectangle({ x: pdfX, y: pdfY, width: 100, height: 25, color: rgb(1, 1, 1) });
-        } else if (el.type === "shape") {
-          page.drawRectangle({ x: pdfX, y: pdfY, width: 100, height: 60, borderWidth: 2, borderColor: rgb(1, 0, 0) });
-        }
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        doc.addImage(imgData, 'JPEG', 0, 0, pdfPages[i].width, pdfPages[i].height);
       }
 
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "Edited_By_SiteNexa.pdf";
-      link.click();
-    } catch (err) {
-      console.error("Error saving PDF:", err);
+      doc.save("edited-document.pdf");
+    } catch (error) {
+      console.error("Download Error:", error);
+    } finally {
+      setIsExporting(false);
     }
-    setIsProcessing(false);
   };
 
+  const activeElement = history.present.find(el => el.id === activeId);
+
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
-      <Helmet><title>Pro PDF Editor | SiteNexa</title></Helmet>
+    <div className="flex flex-col h-screen bg-[#F1F5F9] overflow-hidden select-none font-sans">
+      <Helmet><title>Pro PDF Editor | Advanced Suite</title></Helmet>
 
-      {/* Toolbar */}
-      <div className="max-w-5xl mx-auto sticky top-6 z-50 bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl p-3 mb-10 border border-white flex flex-wrap gap-2 justify-center">
-        {[
-          { id: 'text', icon: <Type size={18}/>, label: 'Text' },
-          { id: 'image', icon: <ImageIcon size={18}/>, label: 'Image' },
-          { id: 'sign', icon: <PenTool size={18}/>, label: 'Sign' },
-          { id: 'whiteout', icon: <Eraser size={18}/>, label: 'Eraser' },
-          { id: 'shape', icon: <Square size={18}/>, label: 'Shape' }
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => {
-              setActiveTool(t.id);
-              if (t.id === "image") imageInput.current.click();
-              if (t.id === "sign") setShowSignModal(true);
-            }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-              activeTool === t.id ? "bg-blue-600 text-white shadow-lg" : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
-        <div className="w-[1px] bg-slate-200 mx-2 h-10" />
-        <button onClick={() => setElements([])} className="p-2 text-slate-400 hover:text-red-500 transition-colors"><Undo size={20}/></button>
-      </div>
-
-      <input type="file" ref={imageInput} className="hidden" accept="image/*" onChange={handleImageUpload} />
-
-      {/* Editor Area */}
-      <div className="flex flex-col items-center">
-        {!file ? (
-          <div 
-            onClick={() => fileInput.current.click()}
-            className="group border-4 border-dashed border-slate-300 rounded-[40px] p-20 text-center bg-white cursor-pointer hover:border-blue-500 transition-all shadow-sm"
-          >
-            <input type="file" ref={fileInput} className="hidden" accept="application/pdf" onChange={handleUpload} />
-            <UploadCloud className="mx-auto mb-6 text-slate-300 group-hover:text-blue-500 transition-colors" size={80} />
-            <h2 className="text-3xl font-black text-slate-700">Drop your PDF here</h2>
-            <p className="text-slate-400 mt-2 font-medium">Click to browse from your computer</p>
+      {/* --- NAVBAR --- */}
+      <nav className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-[100] shadow-sm">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <ToolbarItem 
+              icon={<MousePointer2 size={18}/>} 
+              active={activeTool === 'select'} 
+              onClick={() => setActiveTool('select')} 
+              label="Select"
+            />
+            <ToolbarItem 
+              icon={<Type size={18}/>} 
+              onClick={() => { setActiveTool('text'); addElement('text'); }} 
+              label="Text"
+            />
+            <ToolbarItem 
+              icon={<Highlighter size={18}/>} 
+              onClick={() => { setActiveTool('highlight'); addElement('highlight', { color: '#fbbf2466' }); }} 
+              label="Highlight"
+            />
+            <ToolbarItem 
+              icon={<ImageIcon size={18}/>} 
+              onClick={() => imageInputRef.current.click()} 
+              label="Image"
+            />
           </div>
-        ) : (
-          <div 
-            ref={containerRef}
-            className="relative shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border-[12px] border-white bg-white rounded-sm overflow-visible"
-            style={{ width: 650, height: 850 }}
-            onClick={addElement}
-          >
-            <img src={previewImage} alt="PDF Preview" className="w-full h-full object-contain pointer-events-none" />
-            
-            {elements.map(el => (
-              <Draggable 
-                key={el.id} 
-                bounds="parent" 
-                defaultPosition={{ x: el.x, y: el.y }}
-                onStop={(e, data) => setElements(elements.map(item => item.id === el.id ? { ...item, x: data.x, y: data.y } : item))}
-              >
-                <div className="absolute z-50 group cursor-move touch-none">
-                  {el.type === "text" && (
-                    <input 
-                      autoFocus
-                      className="bg-blue-50/80 border border-blue-200 rounded px-2 py-1 outline-none text-blue-900 font-medium shadow-sm"
-                      value={el.content}
-                      onChange={(e) => setElements(elements.map(item => item.id === el.id ? { ...item, content: e.target.value } : item))}
-                    />
-                  )}
-                  {el.type === "whiteout" && <div className="bg-white border w-32 h-8 shadow-sm" />}
-                  {el.type === "shape" && <div className="border-2 border-red-500 w-32 h-20" />}
-                  {(el.type === "image" || el.type === "sign") && (
-                    <img src={el.content} alt="element" className="w-40 select-none shadow-md rounded" draggable={false} />
-                  )}
-                  <button 
-                    onClick={() => setElements(elements.filter(i => i.id !== el.id))}
-                    className="absolute -top-3 -right-3 hidden group-hover:flex bg-red-500 text-white rounded-full p-1 shadow-lg"
-                  ><X size={12}/></button>
-                </div>
-              </Draggable>
-            ))}
-          </div>
-        )}
+        </div>
 
-        {file && (
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 border-r pr-4 border-slate-200">
+            <button onClick={() => dispatch({ type: "UNDO" })} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500" title="Undo"><Undo2 size={18}/></button>
+            <button onClick={() => dispatch({ type: "REDO" })} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500" title="Redo"><Redo2 size={18}/></button>
+          </div>
           <button 
-            onClick={savePdf}
-            disabled={isProcessing}
-            className="mt-12 bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl shadow-emerald-200 transition-all active:scale-95 disabled:opacity-50"
+            onClick={downloadPdf}
+            disabled={!file || isExporting}
+            className="bg-rose-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-rose-100 hover:bg-rose-600 disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95"
           >
-            <Download size={24}/>
-            {isProcessing ? "PROCESSING..." : "FINISH & DOWNLOAD"}
+            {isExporting ? <Loader2 className="animate-spin" size={18}/> : <Download size={18}/>} 
+            {isExporting ? "Exporting..." : "Download PDF"}
           </button>
-        )}
+        </div>
+      </nav>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* --- THUMBNAILS --- */}
+        <aside className="w-52 bg-white border-r border-slate-200 p-4 hidden md:flex flex-col gap-4 overflow-y-auto">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Page Preview</p>
+          {pdfPages.map((page, idx) => (
+            <div 
+              key={idx} 
+              onClick={() => setCurrentPage(idx + 1)}
+              className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${currentPage === idx + 1 ? 'border-rose-500 bg-rose-50' : 'border-transparent hover:border-slate-200'}`}
+            >
+              <img src={page.url} className="w-full" alt={`Page ${idx + 1}`} />
+              <div className="absolute bottom-1 right-1 bg-slate-900/70 text-white text-[9px] px-1.5 py-0.5 rounded-md">{idx + 1}</div>
+            </div>
+          ))}
+        </aside>
+
+        {/* --- CANVAS --- */}
+        <main className="flex-1 overflow-auto p-10 flex flex-col items-center relative custom-scrollbar">
+          {!file ? (
+            <div 
+              className="m-auto max-w-lg w-full bg-white rounded-3xl p-16 text-center border-2 border-dashed border-slate-200 hover:border-rose-400 transition-all cursor-pointer group shadow-xl"
+              onClick={() => fileInputRef.current.click()}
+            >
+              <div className="w-20 h-20 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <UploadCloud size={40}/>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">Upload Your PDF</h2>
+              <p className="text-slate-400 text-sm">Drag & drop or click to browse</p>
+              <input type="file" ref={fileInputRef} hidden accept="application/pdf" onChange={handleFileUpload} />
+            </div>
+          ) : (
+            <div 
+              ref={canvasRef}
+              className="relative bg-white shadow-2xl transition-all duration-100 origin-top"
+              style={{ 
+                width: pdfPages[currentPage-1]?.width * scale, 
+                height: pdfPages[currentPage-1]?.height * scale,
+              }}
+            >
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-50 rounded-lg">
+                  <Loader2 className="animate-spin text-rose-500" size={40}/>
+                </div>
+              )}
+              
+              <img src={pdfPages[currentPage-1]?.url} className="w-full h-full pointer-events-none select-none" alt="" />
+              
+              <div className="absolute inset-0 z-20">
+                {history.present.filter(el => el.pageIndex === currentPage - 1).map((el) => (
+                  <Rnd
+                    key={el.id}
+                    size={{ 
+                      width: el.width === "auto" ? "auto" : el.width * scale, 
+                      height: el.height === "auto" ? "auto" : el.height * scale 
+                    }}
+                    position={{ x: el.x * scale, y: el.y * scale }}
+                    onDragStop={(e, d) => updateElement(el.id, { x: d.x/scale, y: d.y/scale })}
+                    onResizeStop={(e, d, ref, delta, pos) => updateElement(el.id, { width: ref.offsetWidth/scale, height: ref.offsetHeight/scale, ...pos })}
+                    onMouseDown={() => setActiveId(el.id)}
+                    dragGrid={[1, 1]}
+                    bounds="parent"
+                    enableResizing={el.type !== 'text'}
+                    className={`z-30 group ${activeId === el.id ? 'ring-2 ring-rose-500' : ''}`}
+                  >
+                    <div className="w-full h-full relative" style={{ opacity: el.opacity }}>
+                      {el.type === 'text' && (
+                        <div 
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) => updateElement(el.id, { content: e.target.innerText })}
+                          className="outline-none px-2 py-1 whitespace-nowrap min-w-[20px] cursor-text"
+                          style={{ 
+                            fontSize: `${el.fontSize * scale}px`, 
+                            color: el.color, 
+                            fontWeight: el.fontWeight,
+                            fontFamily: el.fontFamily,
+                            textAlign: el.textAlign
+                          }}
+                        >
+                          {el.content}
+                        </div>
+                      )}
+                      {el.type === 'highlight' && <div className="w-full h-full" style={{ backgroundColor: el.color }}></div>}
+                      {el.type === 'image' && <img src={el.content} className="w-full h-full object-contain pointer-events-none" alt="" />}
+                      
+                      {activeId === el.id && !isExporting && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch({ type: "SET_ELEMENTS", payload: history.present.filter(e => e.id !== el.id) });
+                            setActiveId(null);
+                          }}
+                          className="absolute -top-3 -right-3 bg-slate-900 text-white p-1 rounded-full shadow-lg hover:bg-rose-500 transition-colors z-50"
+                        >
+                          <X size={12}/>
+                        </button>
+                      )}
+                    </div>
+                  </Rnd>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* --- PROPERTIES PANEL --- */}
+        <AnimatePresence>
+          {activeElement && (
+            <motion.aside 
+              initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }}
+              className="w-72 bg-white border-l border-slate-200 p-6 z-[110] shadow-xl overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="font-bold text-slate-800 text-xs uppercase tracking-widest flex items-center gap-2">
+                  <Settings2 size={16} className="text-rose-500"/> Settings
+                </h3>
+                <button onClick={() => setActiveId(null)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+              </div>
+
+              <div className="space-y-8">
+                {/* FONT FAMILY SELECTOR */}
+                {activeElement.type === 'text' && (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">Font Family</label>
+                    <select 
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
+                      value={activeElement.fontFamily}
+                      onChange={(e) => updateElement(activeId, { fontFamily: e.target.value })}
+                    >
+                      <option value="'Inter', sans-serif">Inter (Default)</option>
+                      <option value="'Roboto', sans-serif">Roboto</option>
+                      <option value="'Open Sans', sans-serif">Open Sans</option>
+                      <option value="'Montserrat', sans-serif">Montserrat</option>
+                      <option value="'Lato', sans-serif">Lato</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* COLOR PICKER */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">Appearance</label>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="color" 
+                      value={activeElement.color.substring(0,7)} 
+                      onChange={(e) => updateElement(activeId, { color: activeElement.type === 'highlight' ? e.target.value + '66' : e.target.value })}
+                      className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent"
+                    />
+                    <span className="text-xs font-mono text-slate-500">{activeElement.color.toUpperCase()}</span>
+                  </div>
+                </div>
+
+                {/* OPACITY SLIDER */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 flex justify-between">
+                    Opacity <span>{Math.round(activeElement.opacity * 100)}%</span>
+                  </label>
+                  <input 
+                    type="range" min="0.1" max="1" step="0.1"
+                    className="w-full accent-rose-500"
+                    value={activeElement.opacity}
+                    onChange={(e) => updateElement(activeId, { opacity: parseFloat(e.target.value) })}
+                  />
+                </div>
+
+                {activeElement.type === 'text' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3 flex justify-between">
+                        Font Size <span>{activeElement.fontSize}px</span>
+                      </label>
+                      <input 
+                        type="range" min="10" max="100" 
+                        className="w-full accent-rose-500"
+                        value={activeElement.fontSize}
+                        onChange={(e) => updateElement(activeId, { fontSize: parseInt(e.target.value) })}
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button onClick={() => updateElement(activeId, { textAlign: 'left' })} className={`p-2 flex-1 rounded-lg border ${activeElement.textAlign === 'left' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500'}`}><AlignLeft size={16} className="mx-auto" /></button>
+                      <button onClick={() => updateElement(activeId, { textAlign: 'center' })} className={`p-2 flex-1 rounded-lg border ${activeElement.textAlign === 'center' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500'}`}><AlignCenter size={16} className="mx-auto" /></button>
+                      <button onClick={() => updateElement(activeId, { textAlign: 'right' })} className={`p-2 flex-1 rounded-lg border ${activeElement.textAlign === 'right' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500'}`}><AlignRight size={16} className="mx-auto" /></button>
+                    </div>
+
+                    <button 
+                      onClick={() => updateElement(activeId, { fontWeight: activeElement.fontWeight === 'bold' ? 'normal' : 'bold' })}
+                      className={`w-full py-2 rounded-lg border text-sm font-bold ${activeElement.fontWeight === 'bold' ? 'bg-slate-900 text-white' : 'bg-white'}`}
+                    >
+                      Bold Text
+                    </button>
+                  </div>
+                )}
+
+                <button 
+                  onClick={() => { dispatch({ type: "SET_ELEMENTS", payload: history.present.filter(e => e.id !== activeId) }); setActiveId(null); }}
+                  className="w-full py-3 bg-rose-50 text-rose-500 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={16}/> Delete Element
+                </button>
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Signature Modal */}
-      {showSignModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl border border-white">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-black text-slate-800">Add Signature</h3>
-              <button onClick={() => setShowSignModal(false)} className="text-slate-400 hover:text-red-500"><X/></button>
-            </div>
-            <div className="bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden mb-6">
-              <SignatureCanvas ref={sigCanvas} canvasProps={{ width: 350, height: 180, className: 'sigCanvas' }} />
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => sigCanvas.current.clear()} className="flex-1 py-4 bg-slate-100 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">CLEAR</button>
-              <button 
-                onClick={() => {
-                  if (sigCanvas.current.isEmpty()) return;
-                  const data = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
-                  setElements([...elements, { id: Date.now(), type: 'sign', x: 150, y: 150, content: data }]);
-                  setShowSignModal(false);
-                }}
-                className="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
-              >USE SIGNATURE</button>
-            </div>
+      {/* --- FOOTER STATUS --- */}
+      {file && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-8 z-[120]">
+          <div className="flex items-center gap-4 border-r border-white/20 pr-6">
+            <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} className="hover:text-rose-400"><ChevronLeft size={20}/></button>
+            <span className="text-xs font-bold">Page {currentPage} of {pdfPages.length}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(pdfPages.length, p+1))} className="hover:text-rose-400"><ChevronRight size={20}/></button>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setScale(s => Math.max(0.5, s-0.1))}><Minus size={18}/></button>
+            <span className="text-xs font-bold w-10 text-center">{Math.round(scale * 100)}%</span>
+            <button onClick={() => setScale(s => Math.min(2, s+0.1))}><Plus size={18}/></button>
           </div>
         </div>
       )}
+
+      {/* Hidden File Input */}
+      <input 
+        type="file" ref={imageInputRef} hidden accept="image/*" 
+        onChange={(e) => {
+          const f = e.target.files[0];
+          if(f) {
+            const r = new FileReader();
+            r.onload = (ev) => addElement("image", { content: ev.target.result });
+            r.readAsDataURL(f);
+          }
+        }} 
+      />
     </div>
   );
 };
+
+const ToolbarItem = ({ icon, label, onClick, active }) => (
+  <button 
+    onClick={onClick}
+    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${active ? 'bg-white text-rose-500 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800'}`}
+  >
+    {icon}
+    <span className="text-xs">{label}</span>
+  </button>
+);
 
 export default PdfEditor;
