@@ -32,8 +32,9 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://googiz.com",
+      "https://www.googiz.com", // এই লাইনটি অবশ্যই যোগ করুন
       "https://image-utility-app-docker.onrender.com",
-      "https://image-utility-rmi8cjg9n-fahims-projects-cbd7e4c2.vercel.app" // এই লিঙ্কটি অবশ্যই যোগ করতে হবে
+      "https://image-utility-rmi8cjg9n-fahims-projects-cbd7e4c2.vercel.app"
     ],
     credentials: true,
   })
