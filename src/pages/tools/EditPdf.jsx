@@ -128,7 +128,7 @@ const PdfEditor = () => {
       y: 100,
       width: type === "text" ? "auto" : 150,
       height: "auto",
-      content: customData.content || (type === "text" ? "এখনে লিখুন" : ""),
+      content: customData.content || (type === "text" ? "Enter text here" : ""),
       color: "#000000",
       fontSize: 18,
       fontWeight: "500",
@@ -189,7 +189,7 @@ const PdfEditor = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[#F1F5F9] overflow-hidden select-none font-sans">
-      <Helmet><title>Pro PDF Editor | Advanced Suite</title></Helmet>
+      <Helmet><title>PDF Editor | Advanced Suite</title></Helmet>
 
       {/* --- NAVBAR --- */}
       <nav className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-[100] shadow-sm">
