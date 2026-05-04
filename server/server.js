@@ -32,7 +32,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://googiz.com",
-      "https://www.googiz.com", // এই লাইনটি অবশ্যই যোগ করুন
+      "https://www.googiz.com",
       "https://image-utility-app-docker.onrender.com",
       "https://image-utility-rmi8cjg9n-fahims-projects-cbd7e4c2.vercel.app"
     ],
@@ -71,7 +71,7 @@ const storage = multer.diskStorage({
     cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + ".pdf"); // ✅ FIXED
+    cb(null, Date.now() + ".pdf");
   },
 });
 
@@ -149,39 +149,39 @@ app.post("/api/protect-pdf", upload.single("file"), (req, res) => {
 });
 
 
-/* ================= UNIVERSAL OFFICE CONVERTER ================= */
-app.post("/api/convert-document", upload.single("file"), (req, res) => {
+/* ================= UNIVERSAL OFFICE CONVERTER (UNDER MAINTENANCE) ================= */
+// ফাহিম ভাই, Render-এ LibreOffice ক্রাশ করার কারণে এটি আপাতত অফ রাখা হলো।
+app.post("/api/convert-document", (req, res) => {
+  res.status(503).json({ 
+    success: false, 
+    message: "Maintenance Mode: We are upgrading this service. Please try again later." 
+  });
+});
+
+/* 
+অরিজিনাল লজিক নিচে কমেন্ট করে রাখা হলো (ভবিষ্যতে ব্যবহারের জন্য):
+app.post("/api/convert-document-original", upload.single("file"), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-
     const inputPath = req.file.path;
-    const targetFormat = req.body.targetFormat; // e.g., 'docx', 'pdf', 'xlsx', 'pptx'
-    const outputFilename = `${path.parse(req.file.originalname).name}.${targetFormat}`;
-
-    // LibreOffice Headless Command
+    const targetFormat = req.body.targetFormat;
     const command = `libreoffice --headless --convert-to ${targetFormat} --outdir "${UPLOADS_DIR}" "${inputPath}"`;
-
     exec(command, (error) => {
       if (error) {
-        console.error("Conversion Error:", error);
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         return res.status(500).json({ error: "Conversion failed" });
       }
-
-      // LibreOffice output file path
       const generatedFilePath = path.join(UPLOADS_DIR, path.parse(req.file.filename).name + "." + targetFormat);
-
-      res.download(generatedFilePath, outputFilename, (err) => {
-        // ফাইল ডাউনলোড হয়ে গেলে ক্লিনআপ
+      res.download(generatedFilePath, (err) => {
         if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
         if (fs.existsSync(generatedFilePath)) fs.unlinkSync(generatedFilePath);
       });
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
+*/
 
 /* ================= UNLOCK PDF ================= */
 app.post("/api/unlock-pdf", upload.single("file"), (req, res) => {
@@ -303,4 +303,3 @@ app.post("/api/explain-image", upload.single("image"), async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
