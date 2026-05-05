@@ -94,49 +94,47 @@ export default function Dashboard() {
       )}
 
       {/* Sidebar */}
-      <div className={`
-        fixed inset-y-0 left-0 w-64 bg-white border-r p-6 shadow-xl lg:shadow-sm flex flex-col z-50 transition-transform duration-300 transform
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-        lg:translate-x-0 lg:static lg:block
-      `}>
-        <div className="mb-10 flex items-center justify-between lg:justify-start gap-2 px-2">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg" style={{ backgroundColor: colors.primary }}>
-              <Sparkles size={20} className="text-white fill-white" />
-            </div>
-            <span className="text-xl font-black tracking-tight" style={{ color: colors.dark }}>GOOGIZ</span>
-          </div>
-          <button className="lg:hidden p-1 text-gray-500" onClick={() => setIsSidebarOpen(false)}>
-            <X size={24} />
-          </button>
-        </div>
+<div className={`
+  fixed left-0 w-64 bg-white border-r p-6 shadow-xl lg:shadow-sm flex flex-col transition-transform duration-300 transform
+  
+  /* মোবাইলে নেভিবারের ওপর দিয়ে আসবে */
+  z-50 inset-y-0 
+  
+  /* ডেক্সটপে (lg) নেভিবারের নিচে থাকবে */
+  lg:z-30 lg:top-[64px] lg:h-[calc(100vh-64px)] lg:translate-x-0 lg:static lg:block
+  
+  ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
+`}>
+  <div className="mb-10 flex items-center justify-between lg:justify-start gap-2 px-2">
+    {/* Logo বা টাইটেল এখানে দিতে পারেন */}
+    <button className="lg:hidden p-1 text-gray-500" onClick={() => setIsSidebarOpen(false)}>
+      <X size={24} />
+    </button>
+  </div>
 
-        <nav className="space-y-2 flex-1 overflow-y-auto">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active colors={colors} onClick={() => {navigate("/dashboard"); setIsSidebarOpen(false);}} />
-          <NavItem icon={<Wand2 size={20} />} label="AI Magic" colors={colors} isPremium={!isPro} onClick={() => handleToolClick("/ai-tools", true)} />
-          <NavItem icon={<ImageIcon size={20} />} label="Image Tools" colors={colors} onClick={() => handleToolClick("/image-tools", false)} />
-          <NavItem icon={<FileText size={20} />} label="PDF Tools" colors={colors} onClick={() => handleToolClick("/pdf-tools", false)} />
-          <NavItem icon={<Video size={20} />} label="Video Tools" colors={colors} onClick={() => handleToolClick("/video-tools", false)} />
-          <NavItem icon={<Music size={20} />} label="Audio Tools" colors={colors} onClick={() => handleToolClick("/audio-tools", false)} />
-          <NavItem icon={<Wrench size={20} />} label="Utility" colors={colors} onClick={() => handleToolClick("/utility-tools", false)} />
-        </nav>
-        
-        <button 
-          onClick={logout}
-          className="mt-4 lg:hidden flex items-center gap-3 p-3 rounded-xl text-red-500 font-bold hover:bg-red-50"
-        >
-          <LogOut size={20} /> Logout
-        </button>
-      </div>
+  <nav className="space-y-2 flex-1 overflow-y-auto">
+    <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active colors={colors} onClick={() => {navigate("/dashboard"); setIsSidebarOpen(false);}} />
+    <NavItem icon={<Wand2 size={20} />} label="AI Magic" colors={colors} isPremium={!isPro} onClick={() => handleToolClick("/ai-tools", true)} />
+    <NavItem icon={<ImageIcon size={20} />} label="Image Tools" colors={colors} onClick={() => handleToolClick("/image-tools", false)} />
+    <NavItem icon={<FileText size={20} />} label="PDF Tools" colors={colors} onClick={() => handleToolClick("/pdf-tools", false)} />
+    <NavItem icon={<Video size={20} />} label="Video Tools" colors={colors} onClick={() => handleToolClick("/video-tools", false)} />
+    <NavItem icon={<Music size={20} />} label="Audio Tools" colors={colors} onClick={() => handleToolClick("/audio-tools", false)} />
+    <NavItem icon={<Wrench size={20} />} label="Utility" colors={colors} onClick={() => handleToolClick("/utility-tools", false)} />
+  </nav>
+  
+  <button 
+    onClick={logout}
+    className="mt-4 lg:hidden flex items-center gap-3 p-3 rounded-xl text-red-500 font-bold hover:bg-red-50"
+  >
+    <LogOut size={20} /> Logout
+  </button>
+</div>
 
       {/* Main Content */}
       <div className="flex-1 w-full overflow-x-hidden min-h-screen">
         <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b sticky top-0 z-30">
           <div className="flex items-center gap-2">
-             <div className="p-1.5 rounded-md" style={{ backgroundColor: colors.primary }}>
-                <Sparkles size={16} className="text-white fill-white" />
-             </div>
-             <span className="font-bold tracking-tight">GOOGIZ</span>
+             
           </div>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-gray-600 bg-gray-100 rounded-lg">
             <Menu size={24} />
