@@ -1,29 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-<url>
-<loc>https://googiz.com/</loc>
-<priority>1.0</priority>
-</url>
+  <!-- Main Pages -->
+  <url><loc>https://googiz.com/</loc><priority>1.0</priority></url>
+  <url><loc>https://googiz.com/all-tools</loc><priority>0.9</priority></url>
+  <url><loc>https://googiz.com/pricing</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/blog</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/about</loc><priority>0.6</priority></url>
+  <url><loc>https://googiz.com/contact</loc><priority>0.6</priority></url>
 
-<url>
-<loc>https://googiz.com/ai-tools</loc>
-<priority>0.9</priority>
-</url>
+  <!-- Category Pages -->
+  <url><loc>https://googiz.com/ai-tools</loc><priority>0.9</priority></url>
+  <url><loc>https://googiz.com/image-tools</loc><priority>0.9</priority></url>
+  <url><loc>https://googiz.com/pdf-tools</loc><priority>0.9</priority></url>
+  <url><loc>https://googiz.com/video-tools</loc><priority>0.9</priority></url>
+  <url><loc>https://googiz.com/audio-tools</loc><priority>0.9</priority></url>
+  <url><loc>https://googiz.com/utility-tools</loc><priority>0.9</priority></url>
 
-<url>
-<loc>https://googiz.com/image-tools</loc>
-<priority>0.9</priority>
-</url>
+  <!-- AI Tools (Publicly Accessible) -->
+  <url><loc>https://googiz.com/ai-content-writer</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/ai-video-script</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/ai-image-explainer</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/ai-pdf-summarizer</loc><priority>0.8</priority></url>
 
-<url>
-<loc>https://googiz.com/image-tools/compress-image</loc>
-<priority>0.8</priority>
-</url>
+  <!-- Image Tools -->
+  <url><loc>https://googiz.com/compress</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/resize</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/crop</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/convert</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/remove-bg</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/image-to-pdf</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/image-to-text</loc><priority>0.8</priority></url>
 
-<url>
-<loc>https://googiz.com/dashboard</loc>
-<priority>0.5</priority>
-</url>
+  <!-- PDF Core Tools (Working Ones) -->
+  <url><loc>https://googiz.com/merge-pdf</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/split-pdf</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/compress-pdf</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/pdf-to-jpg</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/jpg-to-pdf</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/edit-pdf</loc><priority>0.8</priority></url>
+
+  <!-- Video & Audio Tools -->
+  <url><loc>https://googiz.com/video-cutter</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/video-compress</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/mp3-cutter</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/audio-convert</loc><priority>0.8</priority></url>
+
+  <!-- Utility Tools -->
+  <url><loc>https://googiz.com/qr-generator</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/temp-email</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/password-gen</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/json-formatter</loc><priority>0.8</priority></url>
+  <url><loc>https://googiz.com/typing-test</loc><priority>0.8</priority></url>
+
+  <!-- Policy Pages -->
+  <url><loc>https://googiz.com/privacy</loc><priority>0.3</priority></url>
+  <url><loc>https://googiz.com/terms</loc><priority>0.3</priority></url>
 
 </urlset>
