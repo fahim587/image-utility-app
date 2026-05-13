@@ -6,34 +6,42 @@ export default defineConfig({
   plugins: [react(), tailwindVite()],
 
   optimizeDeps: {
-    // @imgly/background-removal কে exclude রাখা ভালো
+    // @imgly এবং FFmpeg কে বিল্ড অপ্টিমাইজেশন থেকে বাদ রাখা জরুরি
     exclude: ["@ffmpeg/ffmpeg", "@ffmpeg/util", "@imgly/background-removal"], 
     include: ["jspdf", "pdfjs-dist/legacy/build/pdf"]
   },
 
   server: {
-    hmr: { overlay: false },
     headers: {
-      "Cross-Origin-Opener-Policy": "same-origin", // 'same-origin-allow-popups' এর বদলে 'same-origin' বেশি নিরাপদ
-      "Cross-Origin-Embedder-Policy": "require-corp" // FFmpeg এর জন্য 'require-corp' লাইভে বেশি কাজ করে
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp"
     }
   },
 
   build: {
-    chunkSizeWarningLimit: 2000, // লিমিট একটু বাড়ালে বিল্ডে ওয়ার্নিং কম আসবে
+    chunkSizeWarningLimit: 3000,
     rollupOptions: {
-      // 'onnxruntime-web' কে external করার প্রয়োজন নেই যদি আপনি সরাসরি npm প্যাকেজ হিসেবে ব্যবহার করেন
-      // তবে @imgly এর প্রয়োজনে এটি বান্ডেলে থাকাই ভালো। 
-      // আপনি যদি CDN থেকে 'ort' লোড না করেন, তবে external থেকে এটি বাদ দিন।
-      external: [], 
       output: {
-        manualChunks: {
-          // বড় লাইব্রেরিগুলোকে আলাদা চাঙ্কে ভাগ করলে সাইট দ্রুত লোড হবে
-          'vendor-ui': ['framer-motion', 'lucide-react'],
-          'vendor-pdf': ['jspdf', 'pdf-lib', 'pdfjs-dist'],
-          'vendor-ai': ['@imgly/background-removal', 'onnxruntime-web']
+        // Rolldown/Vite 8 এর জন্য ফাংশন ফরম্যাটে manualChunks
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // AI এবং Background Removal লাইব্রেরি
+            if (id.includes('@imgly') || id.includes('onnxruntime-web')) {
+              return 'vendor-ai';
+            }
+            // PDF সংক্রান্ত লাইব্রেরি
+            if (id.includes('jspdf') || id.includes('pdf-lib') || id.includes('pdfjs-dist')) {
+              return 'vendor-pdf';
+            }
+            // অন্যান্য বড় ইউটিলিটি (যেমন: Tesseract, Framer Motion)
+            if (id.includes('tesseract.js') || id.includes('framer-motion')) {
+              return 'vendor-utils';
+            }
+            // বাকি সব সাধারণ লাইব্রেরি
+            return 'vendor';
+          }
         }
-      },
+      }
     }
   }
 });
